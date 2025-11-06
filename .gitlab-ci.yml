@@ -1,0 +1,27 @@
+stages:
+  - build
+
+build_image:
+  stage: build
+  image: docker:latest
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2375/
+    DOCKER_TLS_CERTDIR: ""
+    DOCKERIMAGE_FILE: Dockerfile
+  script:
+    - |
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        TAG="${CI_COMMIT_TAG#v}"
+      else
+        TAG="${CI_COMMIT_REF_NAME//\//-}"
+      fi
+    - IMAGE_NAME="$CI_REGISTRY_IMAGE:$TAG"
+    - echo "Building Docker image..."
+    - docker build -f $DOCKERIMAGE_FILE -t $IMAGE_NAME .
+    - echo "$CI_JOB_TOKEN" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker push $IMAGE_NAME
+  only:
+    - dev
+    - tags
