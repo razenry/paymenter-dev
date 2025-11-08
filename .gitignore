@@ -20,3 +20,4 @@ yarn-error.log
 extensions/Others/Pages
 extensions/Servers/LicenseManager
 extensions/Servers/Proxmox
+database

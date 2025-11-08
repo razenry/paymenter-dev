@@ -91,21 +91,7 @@ return [
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),
 
     'available_locales' => [
-        'ar' => 'Arabic',
-        'de' => 'German',
         'en' => 'English',
-        'es' => 'Spanish',
-        'fi' => 'Finnish',
-        'fr' => 'French',
-        'it' => 'Italian',
-        'sv' => 'Swedish',
-        'uk' => 'Ukrainian',
-        'ko' => 'Korean',
-        'lv' => 'Latvian',
-        'nl' => 'Dutch',
-        'no' => 'Norwegian',
-        'pt' => 'Portuguese',
-        'sr' => 'Serbian',
     ],
 
     'rtl_locales' => [

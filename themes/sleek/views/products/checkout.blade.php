@@ -21,7 +21,7 @@
 
                         <div class="flex-grow">
                             <div class="prose dark:prose-invert max-w-none text-base/70 mb-4">
-                                {!! $product->description !!}
+                                 {!! html_entity_decode((string) $product->description) !!}
                             </div>
 
                             @if ($product->stock === 0)
@@ -206,16 +206,17 @@
                         <div>
                             <x-button.primary wire:click="checkout" wire:loading.attr="disabled"
                                 class="w-full justify-center py-3">
-                                <div class="flex items-center">
-                                    <span wire:loading wire:target="checkout">
-                                        <x-ri-loader-5-fill class="size-5 mr-2 animate-spin" />
-                                        Processing...
-                                    </span>
-                                    <span wire:loading.remove wire:target="checkout">
-                                        <x-ri-shopping-cart-fill class="size-5 mr-2" />
-                                        Checkout
-                                    </span>
+                            <div class="flex items-center">
+                                <div wire:loading wire:target="checkout" class="flex items-center">
+                                    <x-ri-loader-5-fill class="size-5 mr-2 animate-spin" />
+                                    Processing...
                                 </div>
+                                <div wire:loading.remove wire:target="checkout" class="flex items-center">
+                                    <x-ri-shopping-cart-fill class="size-5 mr-2" />
+                                    Checkout
+                                </div>
+                            </div>
+
                             </x-button.primary>
                         </div>
                     @else

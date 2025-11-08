@@ -2,7 +2,7 @@
 
 return [
     'home' => 'Home',
-    'shop' => 'Shop',
+    'shop' => 'Products',
     'cart' => 'Cart',
     'login' => 'Login',
     'register' => 'Register',

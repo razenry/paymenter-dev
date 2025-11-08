@@ -18,8 +18,10 @@ services:
     image: mariadb:lts
     restart: always
     command: --default-authentication-plugin=mysql_native_password
+    ports:
+      - "3309:3306"
     volumes:
-      - "./database:/var/lib/mysql"
+      - "mariadb_data:/var/lib/mysql"
     environment:
       <<: *db-environment
       MYSQL_DATABASE: "paymenter"
@@ -36,6 +38,10 @@ services:
       - database
       - cache
     volumes:
+      - "./config:/app/config"
+      - "./app:/app/app"
+      - "./themes:/app/themes"
+      - "./lang:/app/lang"
       - "./extensions:/app/extensions"
       - "./.env/:/app/.env"
       - "./storage/logs:/app/storage/logs"
@@ -53,3 +59,5 @@ networks:
     ipam:
       config:
         - subnet: 172.23.0.0/16
+volumes:
+  mariadb_data:

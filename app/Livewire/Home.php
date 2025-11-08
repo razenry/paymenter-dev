@@ -6,6 +6,11 @@ use App\Models\Category;
 
 class Home extends Component
 {
+    public function mount()
+    {
+        return redirect()->route('login');
+    }
+
     public function render()
     {
         return view('home', [

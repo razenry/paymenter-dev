@@ -84,7 +84,6 @@ class ImportFromWhmcs extends Command
             $this->importCategories();
             $this->importConfigOptions();
             $this->importProducts();
-            $this->importTickets();
             $this->importOrders();
             $this->importServices();
             $this->importCancellations();
@@ -515,121 +514,147 @@ class ImportFromWhmcs extends Command
 
     }
 
-    private function importProducts()
-    {
-        $this->info('Importing products... (' . $this->count('tblproducts') . ' records)');
+private function importProducts()
+{
+    $this->info('Importing products... (' . $this->count('tblproducts') . ' records)');
 
-        $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts LIMIT :limit OFFSET :offset', function ($records) {
-            $data = [];
-            $planData = [];
-            $priceData = [];
-            $upgrades = [];
+    $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts LIMIT :limit OFFSET :offset', function ($records) {
+        $data = [];
+        $planData = [];
+        $priceData = [];
+        $upgrades = [];
 
-            foreach ($records as $record) {
-                $data[] = [
-                    'id' => $record['id'],
-                    'category_id' => $record['gid'],
-                    'name' => $record['name'],
-                    'description' => $record['description'],
-                    'slug' => !empty($record['slug']) ? $record['slug'] : \Str::slug($record['name']),
-                    'hidden' => $record['hidden'],
-                    'stock' => $record['stockcontrol'] ? $record['qty'] : null,
-                    'allow_quantity' => match ($record['allowqty']) {
-                        1 => 'separated',
-                        3 => 'combined',
-                        default => 'disabled',
-                    },
-                    'created_at' => $record['created_at'],
-                    'updated_at' => $record['updated_at'],
+        foreach ($records as $record) {
+            $this->line("Processing product ID {$record['id']} ({$record['name']})...");
+
+            $data[] = [
+                'id' => $record['id'],
+                'category_id' => $record['gid'],
+                'name' => $record['name'],
+                'description' => $record['description'],
+                'slug' => !empty($record['slug']) ? $record['slug'] : \Str::slug($record['name']),
+                'hidden' => $record['hidden'],
+                'stock' => $record['stockcontrol'] ? $record['qty'] : null,
+                'allow_quantity' => match ($record['allowqty']) {
+                    1 => 'separated',
+                    3 => 'combined',
+                    default => 'disabled',
+                },
+                'created_at' => $record['created_at'],
+                'updated_at' => $record['updated_at'],
+            ];
+
+            // Upgrades
+            $stmt = $this->pdo->prepare('SELECT * FROM tblproduct_upgrade_products WHERE product_id = :product_id');
+            $stmt->bindValue(':product_id', $record['id'], PDO::PARAM_INT);
+            $stmt->execute();
+            $upgradeRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $this->line(" ├─ Found " . count($upgradeRecords) . " upgrade records.");
+
+            foreach ($upgradeRecords as $upgrade) {
+                $upgrades[] = [
+                    'product_id' => $upgrade['product_id'],
+                    'upgrade_id' => $upgrade['upgrade_product_id'],
+                    'created_at' => now(),
+                    'updated_at' => now(),
                 ];
-
-                // Upgrades
-                $stmt = $this->pdo->prepare('SELECT * FROM tblproduct_upgrade_products WHERE product_id = :product_id');
-                $stmt->bindValue(':product_id', $record['id'], PDO::PARAM_INT);
-                $stmt->execute();
-                $upgradeRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                foreach ($upgradeRecords as $upgrade) {
-                    $upgrades[] = [
-                        'product_id' => $upgrade['product_id'],
-                        'upgrade_id' => $upgrade['upgrade_product_id'],
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                }
-
-                // Config options
-                $stmt = $this->pdo->prepare('SELECT * FROM tblproductconfiglinks WHERE pid = :pid');
-                $stmt->bindValue(':pid', $record['id'], PDO::PARAM_INT);
-                $stmt->execute();
-                $configOptionRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-                foreach ($configOptionRecords as $configOptionGroupId) {
-                    // Get the config option group
-                    $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id LIMIT 1');
-                    $configOptionGroup->bindValue(':id', $configOptionGroupId['gid'], PDO::PARAM_INT);
-                    $configOptionGroup->execute();
-                    $configOptionGroup = $configOptionGroup->fetch(PDO::FETCH_ASSOC);
-                    if (!$configOptionGroup) {
-                        continue;
-                    }
-                    // Get config options in the group
-                    $configOptions = $this->pdo->prepare('SELECT * FROM tblproductconfigoptions WHERE gid = :gid');
-                    $configOptions->bindValue(':gid', $configOptionGroup['id'], PDO::PARAM_INT);
-                    $configOptions->execute();
-                    $configOptions = $configOptions->fetchAll(PDO::FETCH_ASSOC);
-                    foreach ($configOptions as $configOption) {
-                        // Link config option to product
-                        DB::table('config_option_products')->insert([
-                            'product_id' => $record['id'],
-                            'config_option_id' => $configOption['id'],
-                        ]);
-                    }
-                }
             }
 
-            // Insert products first
-            DB::table('products')->insert($data);
+            // Config options
+            $stmt = $this->pdo->prepare('SELECT * FROM tblproductconfiglinks WHERE pid = :pid');
+            $stmt->bindValue(':pid', $record['id'], PDO::PARAM_INT);
+            $stmt->execute();
+            $configOptionRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $this->line(" ├─ Found " . count($configOptionRecords) . " config option links.");
 
-            // Insert upgrades
-            if (count($upgrades) > 0) {
-                DB::table('product_upgrades')->insert($upgrades);
-            }
+            foreach ($configOptionRecords as $configOptionGroupId) {
+                // Get the config option group
+                $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id LIMIT 1');
+                $configOptionGroup->bindValue(':id', $configOptionGroupId['gid'], PDO::PARAM_INT);
+                $configOptionGroup->execute();
+                $configOptionGroup = $configOptionGroup->fetch(PDO::FETCH_ASSOC);
 
-            // Now process plans for all products in this batch
-            foreach ($records as $record) {
-                if ($record['paytype'] === 'free') {
-                    // Free product, create a free plan
-                    $planData[$record['id'] . '_free'] = [
-                        'priceable_id' => $record['id'],
-                        'priceable_type' => Product::class,
-                        'name' => 'Free',
-                        'type' => 'free',
-                    ];
-
+                if (!$configOptionGroup) {
+                    $this->warn("   ⚠️  Missing config group ID {$configOptionGroupId['gid']} for product {$record['id']}");
                     continue;
                 }
-                $stmt = $this->pdo->prepare('SELECT * FROM tblpricing WHERE type = "product" AND relid = :relid');
-                $stmt->bindValue(':relid', $record['id'], PDO::PARAM_INT);
-                $stmt->execute();
-                $prices = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-                $this->priceMagic($prices, $planData, $priceData, $record);
-            }
+                // Get config options in the group
+                $configOptions = $this->pdo->prepare('SELECT * FROM tblproductconfigoptions WHERE gid = :gid');
+                $configOptions->bindValue(':gid', $configOptionGroup['id'], PDO::PARAM_INT);
+                $configOptions->execute();
+                $configOptions = $configOptions->fetchAll(PDO::FETCH_ASSOC);
+                $this->line("   ├─ Group {$configOptionGroup['id']} has " . count($configOptions) . " options.");
 
-            // Insert plans and then prices
-            foreach ($planData as $planKey => $plan) {
-                $planId = DB::table('plans')->insertGetId($plan);
-
-                if (isset($priceData[$planKey])) {
-                    foreach ($priceData[$planKey] as &$price) {
-                        $price['plan_id'] = $planId;
-                    }
-                    DB::table('prices')->insert($priceData[$planKey]);
+                foreach ($configOptions as $configOption) {
+                    DB::table('config_option_products')->insert([
+                        'product_id' => $record['id'],
+                        'config_option_id' => $configOption['id'],
+                    ]);
                 }
             }
-        });
-    }
+        }
+
+        // Insert products first
+        $this->info("Inserting " . count($data) . " products...");
+        DB::table('products')->insert($data);
+
+        // Insert upgrades
+        if (count($upgrades) > 0) {
+            $this->info("Inserting " . count($upgrades) . " product upgrades...");
+            DB::table('product_upgrades')->insert($upgrades);
+        }
+
+        // Now process plans for all products in this batch
+        foreach ($records as $record) {
+            $this->line("Creating plans for product ID {$record['id']} ({$record['name']})...");
+
+            if ($record['paytype'] === 'free') {
+                $this->line(" └─ Product is free, creating free plan.");
+                $planData[$record['id'] . '_free'] = [
+                    'priceable_id' => $record['id'],
+                    'priceable_type' => Product::class,
+                    'name' => 'Free',
+                    'type' => 'free',
+                ];
+                continue;
+            }
+
+            $stmt = $this->pdo->prepare('SELECT * FROM tblpricing WHERE type = "product" AND relid = :relid');
+            $stmt->bindValue(':relid', $record['id'], PDO::PARAM_INT);
+            $stmt->execute();
+            $prices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $this->line(" ├─ Found " . count($prices) . " pricing rows.");
+
+            if (empty($prices)) {
+                $this->warn("   ⚠️  No pricing found for product ID {$record['id']} ({$record['name']})");
+                continue;
+            }
+
+            try {
+                $this->priceMagic($prices, $planData, $priceData, $record);
+            } catch (\Throwable $e) {
+                $this->error("   ❌ Error in priceMagic() for product {$record['id']} ({$record['name']}): {$e->getMessage()}");
+                $this->error($e->getTraceAsString());
+                continue;
+            }
+        }
+
+        // Insert plans and then prices
+        $this->info("Inserting " . count($planData) . " plans...");
+        foreach ($planData as $planKey => $plan) {
+            $planId = DB::table('plans')->insertGetId($plan);
+
+            if (isset($priceData[$planKey])) {
+                foreach ($priceData[$planKey] as &$price) {
+                    $price['plan_id'] = $planId;
+                }
+                DB::table('prices')->insert($priceData[$planKey]);
+            }
+        }
+    });
+}
+
 
     private function getUserIdTicket($message, &$userId)
     {

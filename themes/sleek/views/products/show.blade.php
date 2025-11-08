@@ -51,7 +51,7 @@
                     <div>
                         <h3 class="text-lg font-medium mb-2">{{ __('Description') }}</h3>
                         <div class="prose dark:prose-invert max-w-none text-base/70">
-                            {!! $product->description !!}
+                             {!! html_entity_decode((string) $product->description) !!}
                         </div>
                     </div>
 
