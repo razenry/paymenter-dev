@@ -25,7 +25,7 @@ return [
     'already_have_account' => 'Already have an account?',
 
     'sign_up' => 'Sign up',
-    'sign_up_title' => 'Sign up',
+    'sign_up_title' => 'Create your account',
 
     'logout' => 'Logout',
 

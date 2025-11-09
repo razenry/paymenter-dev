@@ -72,23 +72,26 @@
                             {{ $product->name }}
                         </h2>
 
+
+                    </div>
+
+                    <div class="my-2">
                         @if ($product->stock === 0)
                             <span
                                 class="text-xs font-medium px-2.5 py-1 rounded-full bg-error/10 text-error border border-error/20">
-                                {{ __('product.out_of_stock') }}
+                                {{ __('product.out_of_stock', ['product' => $product->name]) }}
                             </span>
                         @elseif($product->stock > 0)
                             <span
-                                class="text-xs font-medium px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20">
+                                class="text-sm font-medium px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20">
                                 {{ __('product.in_stock') }}
                             </span>
                         @endif
                     </div>
 
-
                     @if (theme('direct_checkout', false) && $product->description)
                         <div class="my-6 text-sm text-base/70">
-                      {!! html_entity_decode((string) $product->description) !!}
+                            {!! html_entity_decode((string) $product->description) !!}
                         </div>
                     @endif
 
@@ -105,6 +108,7 @@
                                 class="block w-full" wire:navigate>
                                 <x-button.primary class="w-full justify-center">
                                     <x-ri-shopping-cart-fill class="size-4 mr-2" />
+
                                     {{ __('product.add_to_cart') }}
                                 </x-button.primary>
                             </a>

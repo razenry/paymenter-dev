@@ -72,7 +72,9 @@ class Checkout extends Component
                     return [$option->id => isset($this->configOptions[$option->id]) && in_array($this->configOptions[$option->id], [true, 'true'], true) ? true : false];
                 }
 
-                return [$option->id => $this->configOptions[$option->id] ?? $option->children->first()->id];
+                // Fix: handle when there are no children
+                $defaultChild = $option->children->first();
+                return [$option->id => $this->configOptions[$option->id] ?? ($defaultChild ? $defaultChild->id : null)];
             })->toArray();
             foreach ($this->getCheckoutConfig() as $config) {
                 if (in_array($config['type'], ['select', 'radio'])) {

@@ -84,6 +84,7 @@ class ImportFromWhmcs extends Command
             $this->importCategories();
             $this->importConfigOptions();
             $this->importProducts();
+            $this->importTickets();
             $this->importOrders();
             $this->importServices();
             $this->importCancellations();
@@ -431,11 +432,12 @@ class ImportFromWhmcs extends Command
     private function priceMagic(&$prices, &$planData, &$priceData, $record, $priceableType = Product::class)
     {
         foreach ($prices as $pricing) {
-            if ($record['paytype'] === 'onetime') {
-                // One-time payment product, create a one-time plan
-                $setupFee = $pricing['msetupfee'] ?? 0;
+            if (!isset($pricing['currency'])) {
+                continue;
+            }
 
-                // Create a unique key to link plan and price
+            if ($record['paytype'] === 'onetime') {
+                $setupFee = $pricing['msetupfee'] ?? 0;
                 $planKey = $record['id'] . '_onetime';
 
                 $planData[$planKey] = [
@@ -447,214 +449,176 @@ class ImportFromWhmcs extends Command
                     'billing_unit' => null,
                 ];
 
-                $currency = $this->pdo->prepare('SELECT * FROM tblcurrencies WHERE id = :id LIMIT 1');
+                $currency = $this->pdo->prepare('SELECT code FROM tblcurrencies WHERE id = :id LIMIT 1');
                 $currency->bindValue(':id', $pricing['currency'], PDO::PARAM_INT);
                 $currency->execute();
-                $currency = $currency->fetch(PDO::FETCH_ASSOC);
+                $currency = $currency->fetchColumn();
 
                 $priceData[$planKey][] = [
-                    'currency_code' => $currency['code'],
-                    'price' => $pricing['monthly'],
+                    'currency_code' => $currency ?: 'USD',
+                    'price' => $pricing['monthly'] ?? 0,
                     'setup_fee' => $setupFee,
                 ];
 
                 continue;
             }
 
-            foreach (['monthly', 'quarterly', 'semiannually', 'annually', 'biennially', 'triennially'] as $period) {
-                if ($pricing[$period] > 0) {
-                    $setupFee = match ($period) {
-                        'monthly' => $pricing['msetupfee'],
-                        'quarterly' => $pricing['qsetupfee'],
-                        'semiannually' => $pricing['ssetupfee'],
-                        'annually' => $pricing['asetupfee'],
-                        'biennially' => $pricing['bsetupfee'],
-                        'triennially' => $pricing['tsetupfee'],
-                        default => 0,
-                    };
-
-                    // Create a unique key to link plan and price
-                    $planKey = $record['id'] . '_' . $period;
-
-                    $planData[$planKey] = [
-                        'priceable_id' => $record['id'],
-                        'priceable_type' => $priceableType,
-                        'name' => ucfirst($period),
-                        'type' => 'recurring',
-                        'billing_period' => match ($period) {
-                            'monthly' => 1,
-                            'quarterly' => 3,
-                            'semiannually' => 6,
-                            'annually' => 1,
-                            'biennially' => 2,
-                            'triennially' => 3,
-                            default => 1,
-                        },
-                        'billing_unit' => match ($period) {
-                            'monthly', 'quarterly', 'semiannually' => 'month',
-                            'annually', 'biennially', 'triennially' => 'year',
-                            default => 'month',
-                        },
-                    ];
-
-                    $currency = $this->pdo->prepare('SELECT * FROM tblcurrencies WHERE id = :id LIMIT 1');
-                    $currency->bindValue(':id', $pricing['currency'], PDO::PARAM_INT);
-                    $currency->execute();
-                    $currency = $currency->fetch(PDO::FETCH_ASSOC);
-
-                    $priceData[$planKey][] = [
-                        'currency_code' => $currency['code'],
-                        'price' => $pricing[$period],
-                        'setup_fee' => $setupFee,
-                    ];
-                }
-
-            }
-        }
-
-    }
-
-private function importProducts()
-{
-    $this->info('Importing products... (' . $this->count('tblproducts') . ' records)');
-
-    $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts LIMIT :limit OFFSET :offset', function ($records) {
-        $data = [];
-        $planData = [];
-        $priceData = [];
-        $upgrades = [];
-
-        foreach ($records as $record) {
-            $this->line("Processing product ID {$record['id']} ({$record['name']})...");
-
-            $data[] = [
-                'id' => $record['id'],
-                'category_id' => $record['gid'],
-                'name' => $record['name'],
-                'description' => $record['description'],
-                'slug' => !empty($record['slug']) ? $record['slug'] : \Str::slug($record['name']),
-                'hidden' => $record['hidden'],
-                'stock' => $record['stockcontrol'] ? $record['qty'] : null,
-                'allow_quantity' => match ($record['allowqty']) {
-                    1 => 'separated',
-                    3 => 'combined',
-                    default => 'disabled',
-                },
-                'created_at' => $record['created_at'],
-                'updated_at' => $record['updated_at'],
+            $periodMap = [
+                'monthly' => ['period' => 1, 'unit' => 'month', 'setup' => 'msetupfee'],
+                'quarterly' => ['period' => 3, 'unit' => 'month', 'setup' => 'qsetupfee'],
+                'semiannually' => ['period' => 6, 'unit' => 'month', 'setup' => 'ssetupfee'],
+                'annually' => ['period' => 1, 'unit' => 'year', 'setup' => 'asetupfee'],
+                'biennially' => ['period' => 2, 'unit' => 'year', 'setup' => 'bsetupfee'],
+                'triennially' => ['period' => 3, 'unit' => 'year', 'setup' => 'tsetupfee'],
             ];
 
-            // Upgrades
-            $stmt = $this->pdo->prepare('SELECT * FROM tblproduct_upgrade_products WHERE product_id = :product_id');
-            $stmt->bindValue(':product_id', $record['id'], PDO::PARAM_INT);
-            $stmt->execute();
-            $upgradeRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $this->line(" ├─ Found " . count($upgradeRecords) . " upgrade records.");
-
-            foreach ($upgradeRecords as $upgrade) {
-                $upgrades[] = [
-                    'product_id' => $upgrade['product_id'],
-                    'upgrade_id' => $upgrade['upgrade_product_id'],
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
-            }
-
-            // Config options
-            $stmt = $this->pdo->prepare('SELECT * FROM tblproductconfiglinks WHERE pid = :pid');
-            $stmt->bindValue(':pid', $record['id'], PDO::PARAM_INT);
-            $stmt->execute();
-            $configOptionRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $this->line(" ├─ Found " . count($configOptionRecords) . " config option links.");
-
-            foreach ($configOptionRecords as $configOptionGroupId) {
-                // Get the config option group
-                $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id LIMIT 1');
-                $configOptionGroup->bindValue(':id', $configOptionGroupId['gid'], PDO::PARAM_INT);
-                $configOptionGroup->execute();
-                $configOptionGroup = $configOptionGroup->fetch(PDO::FETCH_ASSOC);
-
-                if (!$configOptionGroup) {
-                    $this->warn("   ⚠️  Missing config group ID {$configOptionGroupId['gid']} for product {$record['id']}");
+            foreach ($periodMap as $period => $config) {
+                $priceValue = $pricing[$period] ?? 0;
+                if ($priceValue <= 0) {
                     continue;
                 }
 
-                // Get config options in the group
-                $configOptions = $this->pdo->prepare('SELECT * FROM tblproductconfigoptions WHERE gid = :gid');
-                $configOptions->bindValue(':gid', $configOptionGroup['id'], PDO::PARAM_INT);
-                $configOptions->execute();
-                $configOptions = $configOptions->fetchAll(PDO::FETCH_ASSOC);
-                $this->line("   ├─ Group {$configOptionGroup['id']} has " . count($configOptions) . " options.");
+                $setupFee = $pricing[$config['setup']] ?? 0;
+                $planKey = $record['id'] . '_' . $period;
 
-                foreach ($configOptions as $configOption) {
-                    DB::table('config_option_products')->insert([
-                        'product_id' => $record['id'],
-                        'config_option_id' => $configOption['id'],
-                    ]);
-                }
-            }
-        }
-
-        // Insert products first
-        $this->info("Inserting " . count($data) . " products...");
-        DB::table('products')->insert($data);
-
-        // Insert upgrades
-        if (count($upgrades) > 0) {
-            $this->info("Inserting " . count($upgrades) . " product upgrades...");
-            DB::table('product_upgrades')->insert($upgrades);
-        }
-
-        // Now process plans for all products in this batch
-        foreach ($records as $record) {
-            $this->line("Creating plans for product ID {$record['id']} ({$record['name']})...");
-
-            if ($record['paytype'] === 'free') {
-                $this->line(" └─ Product is free, creating free plan.");
-                $planData[$record['id'] . '_free'] = [
+                $planData[$planKey] = [
                     'priceable_id' => $record['id'],
-                    'priceable_type' => Product::class,
-                    'name' => 'Free',
-                    'type' => 'free',
+                    'priceable_type' => $priceableType,
+                    'name' => ucfirst($period),
+                    'type' => 'recurring',
+                    'billing_period' => $config['period'],
+                    'billing_unit' => $config['unit'],
                 ];
-                continue;
-            }
 
-            $stmt = $this->pdo->prepare('SELECT * FROM tblpricing WHERE type = "product" AND relid = :relid');
-            $stmt->bindValue(':relid', $record['id'], PDO::PARAM_INT);
-            $stmt->execute();
-            $prices = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            $this->line(" ├─ Found " . count($prices) . " pricing rows.");
+                $currency = $this->pdo->prepare('SELECT code FROM tblcurrencies WHERE id = :id LIMIT 1');
+                $currency->bindValue(':id', $pricing['currency'], PDO::PARAM_INT);
+                $currency->execute();
+                $currency = $currency->fetchColumn();
 
-            if (empty($prices)) {
-                $this->warn("   ⚠️  No pricing found for product ID {$record['id']} ({$record['name']})");
-                continue;
-            }
-
-            try {
-                $this->priceMagic($prices, $planData, $priceData, $record);
-            } catch (\Throwable $e) {
-                $this->error("   ❌ Error in priceMagic() for product {$record['id']} ({$record['name']}): {$e->getMessage()}");
-                $this->error($e->getTraceAsString());
-                continue;
+                $priceData[$planKey][] = [
+                    'currency_code' => $currency ?: 'USD',
+                    'price' => $priceValue,
+                    'setup_fee' => $setupFee,
+                ];
             }
         }
+    }
 
-        // Insert plans and then prices
-        $this->info("Inserting " . count($planData) . " plans...");
-        foreach ($planData as $planKey => $plan) {
-            $planId = DB::table('plans')->insertGetId($plan);
+    private function importProducts()
+    {
+        $this->info('Importing products... (' . $this->count('tblproducts') . ' records)');
 
-            if (isset($priceData[$planKey])) {
-                foreach ($priceData[$planKey] as &$price) {
-                    $price['plan_id'] = $planId;
+        $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts LIMIT :limit OFFSET :offset', function ($records) {
+            $data = [];
+            $planData = [];
+            $priceData = [];
+            $upgrades = [];
+
+            foreach ($records as $record) {
+                $data[] = [
+                    'id' => $record['id'],
+                    'category_id' => $record['gid'],
+                    'name' => $record['name'],
+                    'description' => $record['description'],
+                    'slug' => !empty($record['slug']) ? $record['slug'] : \Str::slug($record['name']),
+                    'hidden' => $record['hidden'],
+                    'stock' => $record['stockcontrol'] ? $record['qty'] : null,
+                    'allow_quantity' => match ($record['allowqty']) {
+                        1 => 'separated',
+                        3 => 'combined',
+                        default => 'disabled',
+                    },
+                    'created_at' => $record['created_at'],
+                    'updated_at' => $record['updated_at'],
+                ];
+
+                // Upgrades
+                $stmt = $this->pdo->prepare('SELECT * FROM tblproduct_upgrade_products WHERE product_id = :product_id');
+                $stmt->bindValue(':product_id', $record['id'], PDO::PARAM_INT);
+                $stmt->execute();
+                $upgradeRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($upgradeRecords as $upgrade) {
+                    $upgrades[] = [
+                        'product_id' => $upgrade['product_id'],
+                        'upgrade_id' => $upgrade['upgrade_product_id'],
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
                 }
-                DB::table('prices')->insert($priceData[$planKey]);
-            }
-        }
-    });
-}
 
+                // Config options
+                $stmt = $this->pdo->prepare('SELECT * FROM tblproductconfiglinks WHERE pid = :pid');
+                $stmt->bindValue(':pid', $record['id'], PDO::PARAM_INT);
+                $stmt->execute();
+                $configOptionRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                foreach ($configOptionRecords as $configOptionGroupId) {
+                    // Get the config option group
+                    $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id LIMIT 1');
+                    $configOptionGroup->bindValue(':id', $configOptionGroupId['gid'], PDO::PARAM_INT);
+                    $configOptionGroup->execute();
+                    $configOptionGroup = $configOptionGroup->fetch(PDO::FETCH_ASSOC);
+                    if (!$configOptionGroup) {
+                        continue;
+                    }
+                    // Get config options in the group
+                    $configOptions = $this->pdo->prepare('SELECT * FROM tblproductconfigoptions WHERE gid = :gid');
+                    $configOptions->bindValue(':gid', $configOptionGroup['id'], PDO::PARAM_INT);
+                    $configOptions->execute();
+                    $configOptions = $configOptions->fetchAll(PDO::FETCH_ASSOC);
+                    foreach ($configOptions as $configOption) {
+                        // Link config option to product
+                        DB::table('config_option_products')->insert([
+                            'product_id' => $record['id'],
+                            'config_option_id' => $configOption['id'],
+                        ]);
+                    }
+                }
+            }
+
+            // Insert products first
+            DB::table('products')->insert($data);
+
+            // Insert upgrades
+            if (count($upgrades) > 0) {
+                DB::table('product_upgrades')->insert($upgrades);
+            }
+
+            // Now process plans for all products in this batch
+            foreach ($records as $record) {
+                if ($record['paytype'] === 'free') {
+                    // Free product, create a free plan
+                    $planData[$record['id'] . '_free'] = [
+                        'priceable_id' => $record['id'],
+                        'priceable_type' => Product::class,
+                        'name' => 'Free',
+                        'type' => 'free',
+                    ];
+
+                    continue;
+                }
+                $stmt = $this->pdo->prepare('SELECT * FROM tblpricing WHERE type = "product" AND relid = :relid');
+                $stmt->bindValue(':relid', $record['id'], PDO::PARAM_INT);
+                $stmt->execute();
+                $prices = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $this->priceMagic($prices, $planData, $priceData, $record);
+            }
+
+            // Insert plans and then prices
+            foreach ($planData as $planKey => $plan) {
+                $planId = DB::table('plans')->insertGetId($plan);
+
+                if (isset($priceData[$planKey])) {
+                    foreach ($priceData[$planKey] as &$price) {
+                        $price['plan_id'] = $planId;
+                    }
+                    DB::table('prices')->insert($priceData[$planKey]);
+                }
+            }
+        });
+    }
 
     private function getUserIdTicket($message, &$userId)
     {
@@ -807,6 +771,22 @@ private function importProducts()
 
         $this->migrateInBatch('tblhosting', 'SELECT * FROM tblhosting LIMIT :limit OFFSET :offset', function ($records) {
             $data = [];
+
+            // helper function to fix invalid dates
+            $fixDate = function ($date) {
+                if (empty($date) || $date === '0000-00-00') {
+                    return null;
+                }
+
+                $time = strtotime($date);
+                // if invalid or too old (like 0020-10-06), fallback to safe date
+                if ($time === false || $time < strtotime('1970-01-01')) {
+                    return null;
+                }
+
+                return date('Y-m-d H:i:s', $time);
+            };
+
             foreach ($records as $record) {
                 // Get currency from user
                 $user = $this->pdo->prepare('SELECT * FROM tblcurrencies WHERE id = (SELECT currency FROM tblclients WHERE id = :client_id LIMIT 1) LIMIT 1');
@@ -851,9 +831,11 @@ private function importProducts()
                     'user_id' => $record['userid'],
                     'plan_id' => $planId,
                     'currency_code' => $user['code'],
-                    'expires_at' => $record['nextduedate'] != '0000-00-00' ? $record['nextduedate'] : null,
-                    'created_at' => $record['regdate'],
-                    'updated_at' => $record['regdate'],
+                    'expires_at' => $record['nextduedate'] != '0000-00-00'
+                        ? $fixDate($record['nextduedate'])
+                        : null,
+                    'created_at' => $fixDate($record['regdate']),
+                    'updated_at' => $fixDate($record['regdate']),
                 ];
             }
 

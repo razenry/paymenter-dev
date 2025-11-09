@@ -303,23 +303,26 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name')->searchable(),
+                TextColumn::make('name')
+                    ->searchable(query: function ($query, $search) {
+                        $query->where('products.name', 'like', "%{$search}%");
+                    }),
                 TextColumn::make('slug'),
-                TextColumn::make('category.name')->searchable(),
+                TextColumn::make('category.name')
+                    ->searchable(query: function ($query, $search) {
+                        $query->whereHas('category', fn ($q) => $q->where('name', 'like', "%{$search}%"));
+                    }),
             ])
             ->filters([
-                SelectFilter::make('category')
+            SelectFilter::make('category')
                     ->relationship('category', 'name')
                     ->searchable()
                     ->preload(),
-            ])
+        ])
             ->recordActions([
-                EditAction::make(),
-            ])
-            ->defaultSort(function (Builder $query): Builder {
-                return $query
-                    ->orderBy('sort', 'asc');
-            })
+            EditAction::make(),
+        ])
+            ->defaultSort(fn (Builder $query) => $query->orderBy('sort', 'asc'))
             ->defaultGroup('category.name');
     }
 

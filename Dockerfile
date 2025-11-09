@@ -39,12 +39,10 @@ RUN npm run build
 FROM final AS production
 COPY --from=build /app/public /app/public
 
-COPY .gitlab/docker/default.conf /etc/nginx/http.d/default.conf
-COPY .gitlab/docker/www.conf /usr/local/etc/php-fpm.conf
-COPY .gitlab/docker/supervisord.conf /etc/supervisord.conf
-COPY .gitlab/docker/99-performance.ini /usr/local/etc/php/conf.d/
+COPY .github/docker/default.conf /etc/nginx/http.d/default.conf
+COPY .github/docker/www.conf /usr/local/etc/php-fpm.conf
+COPY .github/docker/supervisord.conf /etc/supervisord.conf
 
-ENTRYPOINT [ "/bin/ash", ".gitlab/docker/entrypoint.sh" ]
+EXPOSE 80
+ENTRYPOINT [ "/bin/ash", ".github/docker/entrypoint.sh" ]
 CMD [ "supervisord", "-n", "-c", "/etc/supervisord.conf" ]
-
-
