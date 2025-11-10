@@ -508,19 +508,22 @@ class ImportFromWhmcs extends Command
     {
         $this->info('Importing products... (' . $this->count('tblproducts') . ' records)');
 
-        $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts LIMIT :limit OFFSET :offset', function ($records) {
+        $this->migrateInBatch('tblproducts', 'SELECT tblproducts.*, tblproductgroups.slug AS `group_slug` FROM tblproducts JOIN tblproductgroups on tblproductgroups.id = tblproducts.gid LIMIT :limit OFFSET :offset', function ($records) {
             $data = [];
             $planData = [];
             $priceData = [];
             $upgrades = [];
 
             foreach ($records as $record) {
+                $groupSlug = ($record['group_slug'] ?? '') ? "{$record['group_slug']}-" : '';
+                $slug = $groupSlug . ($record['slug'] ?: \Str::slug($record['name']));
+
                 $data[] = [
                     'id' => $record['id'],
                     'category_id' => $record['gid'],
                     'name' => $record['name'],
                     'description' => $record['description'],
-                    'slug' => !empty($record['slug']) ? $record['slug'] : \Str::slug($record['name']),
+                    'slug' => $slug,
                     'hidden' => $record['hidden'],
                     'stock' => $record['stockcontrol'] ? $record['qty'] : null,
                     'allow_quantity' => match ($record['allowqty']) {
