@@ -1,17 +1,5 @@
 <div>
     <div class="flex flex-col gap-6">
-        <div class="w-full bg-background-secondary p-14 rounded-md border-b border-neutral">
-            <div class="container">
-                <article class="prose dark:prose-invert max-w-full ">
-                    {!! Str::markdown(theme('home_page_text', 'Welcome to Paymenter'), [
-                    'allow_unsafe_links' => false,
-                    'renderer' => [
-                    'soft_break' => "<br>"
-                    ]]) !!}
-                </article>
-            </div>
-        </div>
-
         <div class="container mt-4 flex flex-col gap-5">
 
             <h2 class="text-xl font-semibold">Services</h2>

@@ -20,11 +20,6 @@ class Navigation
 
             $routes = [
                 [
-                    'name' => __('navigation.home'),
-                    'url' => route('home'),
-                    'icon' => 'ri-home-2',
-                ],
-                [
                     'name' => __('navigation.shop'),
                     'children' => $categories->map(function ($category) {
                         return [

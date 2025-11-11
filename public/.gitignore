@@ -1,0 +1,14 @@
+# Ignore everything
+*
+
+# Allow these folders and their contents
+!fonts/
+!js/
+!assets/
+!css/
+
+# Allow all files with an extension (e.g., *.html, *.js, *.png)
+!*.*
+
+# Keep this file tracked too
+!.gitignore

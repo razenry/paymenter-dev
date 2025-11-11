@@ -77,7 +77,5 @@
                 </a>
             @endif
         @endforeach
-    @else
-        <span class="text-lg font-bold">{{ __('navigation.home') }}</span>
     @endif
 </div>

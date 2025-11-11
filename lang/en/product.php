@@ -17,7 +17,8 @@ return [
     'apply' => 'Apply',
     'price' => 'Price',
     'setup_fee' => 'Setup fee',
-
+    'select_plan' => 'Select a plan',
+    'available_plans' => 'Available Plans',
     'in_stock' => 'In stock',
     'out_of_stock' => 'Product :product is out of stock',
     'user_limit' => 'You have reached the limit of :product',

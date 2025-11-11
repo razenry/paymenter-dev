@@ -21,7 +21,7 @@
 
                         <div class="flex-grow">
                             <div class="prose dark:prose-invert max-w-none text-base/70 mb-4">
-                                {!! $product->description !!}
+                                {!! html_entity_decode((string) $product->description) !!}
                             </div>
 
                             @if ($product->stock === 0)
@@ -186,17 +186,19 @@
                         <div class="border-t border-neutral/10 my-2"></div>
 
                         <div class="bg-neutral/5 p-3 rounded-lg border border-neutral/10">
-                            <div class="flex justify-between items-center">
+                            <div class="flex flex-col text-sm mt-1">
                                 <span class="font-medium">Total today:</span>
                                 <span class="text-lg font-semibold text-primary">{{ $total }}</span>
                             </div>
 
                             @if ($total->setup_fee && $plan->type == 'recurring')
-                                <div class="flex justify-between items-center text-sm mt-1">
-                                    <span
-                                        class="text-base/60">{{ __('product.then_after_x', ['time' => $plan->billing_period . ' ' . trans_choice(__('services.billing_cycles.' . $plan->billing_unit), $plan->billing_period)]) }}:</span>
-                                    <span
-                                        class="font-medium">{{ $total->format($total->price - $total->setup_fee) }}</span>
+                                <div class="flex flex-col text-sm mt-1">
+                                    <span class="text-base/60">
+                                        {{ __('product.then_after_x', ['time' => $plan->billing_period . ' ' . trans_choice(__('services.billing_cycles.' . $plan->billing_unit), $plan->billing_period)]) }}:
+                                    </span>
+                                    <span class="font-medium">
+                                        {{ $total->format($total->price - $total->setup_fee) }}
+                                    </span>
                                 </div>
                             @endif
                         </div>
@@ -207,15 +209,16 @@
                             <x-button.primary wire:click="checkout" wire:loading.attr="disabled"
                                 class="w-full justify-center py-3">
                                 <div class="flex items-center">
-                                    <span wire:loading wire:target="checkout">
+                                    <div wire:loading wire:target="checkout" class="flex items-center">
                                         <x-ri-loader-5-fill class="size-5 mr-2 animate-spin" />
                                         Processing...
-                                    </span>
-                                    <span wire:loading.remove wire:target="checkout">
+                                    </div>
+                                    <div wire:loading.remove wire:target="checkout" class="flex items-center">
                                         <x-ri-shopping-cart-fill class="size-5 mr-2" />
                                         Checkout
-                                    </span>
+                                    </div>
                                 </div>
+
                             </x-button.primary>
                         </div>
                     @else
