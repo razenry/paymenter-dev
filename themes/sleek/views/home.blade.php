@@ -1,5 +1,44 @@
 <div class="max-w-7xl mx-auto">
+    <div class="relative mb-16">
+        <div class="text-center py-16 px-6">
+            <div class="max-w-4xl mx-auto">
+                <h1 class="text-4xl md:text-5xl lg:text-6xl font-bold text-base mb-6 leading-tight">
+                    {!! Str::markdown(theme('home_page_text', 'Professional **Web Hosting** Made Simple'), [
+                        'allow_unsafe_links' => false,
+                        'renderer' => [
+                            'soft_break' => '<br>',
+                        ],
+                    ]) !!}
+                </h1>
+                <p class="text-lg md:text-xl text-base/70 mb-8 max-w-2xl mx-auto leading-relaxed">
+                    {{ theme('hero_description', 'Reliable, fast, and secure hosting solutions for businesses of all sizes. Get started in minutes with our easy-to-use platform.') }}
+                </p>
+                @if (theme('hero_primary_button_text') || theme('hero_secondary_button_text'))
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-12">
+                        @if (theme('hero_primary_button_text'))
+                            <a href="{{ theme('hero_primary_button_url', '#services') }}" class="w-full sm:w-auto"
+                                @if (str_starts_with(theme('hero_primary_button_url', '#services'), '#')) @else wire:navigate @endif>
+                                <x-button.primary class="w-full sm:w-auto px-8 py-4 text-lg">
+                                    <x-ri-flashlight-line class="size-5 mr-2" />
+                                    {{ theme('hero_primary_button_text') }}
+                                </x-button.primary>
+                            </a>
+                        @endif
+                        @if (theme('hero_secondary_button_text'))
+                            <a href="{{ theme('hero_secondary_button_url', '/tickets/create') }}"
+                                class="w-full sm:w-auto" @if (str_starts_with(theme('hero_secondary_button_url', '/tickets/create'), '#')) @else wire:navigate @endif>
+                                <x-button.secondary class="w-full sm:w-auto px-8 py-4 text-lg">
+                                    <x-ri-customer-service-line class="size-5 mr-2" />
+                                    {{ theme('hero_secondary_button_text') }}
+                                </x-button.secondary>
+                            </a>
+                        @endif
+                    </div>
+                @endif
 
+            </div>
+        </div>
+    </div>
 
 
     @if (theme('enable_features_section', true))
@@ -162,6 +201,54 @@
         </div>
         </a>
         @endforeach
+    </div>
+</div>
+
+<div class="mb-16">
+    <x-logo-marquee />
+</div>
+
+<div class="mb-16">
+    <div class="bg-background-secondary border border-neutral/20 rounded-xl p-8 md:p-12 text-center">
+        <h2 class="text-2xl md:text-3xl font-bold text-base mb-4">
+            {{ theme('footer_cta_text', 'Ready to Get Started?') }}</h2>
+        <p class="text-lg text-base/70 mb-8 max-w-2xl mx-auto">
+            {{ theme('footer_cta_description', 'Join thousands of satisfied customers who trust us with their hosting needs. Get your website online today!') }}
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+            @php
+                $primaryLink = theme('cta_primary_link', '#services');
+            @endphp
+            <a href="{{ $primaryLink }}" class="w-full sm:w-auto">
+                <x-button.primary class="w-full sm:w-auto px-8 py-4 text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 mr-2" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    {{ theme('cta_primary_text', 'Explore Our Services') }}
+                </x-button.primary>
+            </a>
+
+            @php
+                $secondaryLink = theme('cta_secondary_link', 'tickets/create');
+
+                $secondaryHref = $secondaryLink;
+                if ($secondaryLink === 'tickets/create') {
+                    $secondaryHref = route('tickets.create');
+                }
+            @endphp
+            <a href="{{ $secondaryHref }}" class="w-full sm:w-auto" wire:navigate>
+                <x-button.secondary class="w-full sm:w-auto px-8 py-4 text-lg">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 mr-2" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    {{ theme('cta_secondary_text', 'Have Questions?') }}
+                </x-button.secondary>
+            </a>
+        </div>
     </div>
 </div>
 

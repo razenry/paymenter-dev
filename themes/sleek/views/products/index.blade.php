@@ -66,38 +66,45 @@
         @foreach ($products as $product)
             <div
                 class="flex flex-col bg-background-secondary hover:bg-background-secondary/90 border border-neutral/20 p-5 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md group">
-                <div class="flex-1 flex flex-col">
-                    <div class="flex items-center justify-between">
-                        <h2 class="text-xl font-bold group-hover:text-primary transition-colors duration-200">
-                            {{ $product->name }}
-                        </h2>
-
-
-                    </div>
-
-                    <div class="my-2">
-                        @if ($product->stock === 0)
+                <div class="relative overflow-hidden rounded-md mb-4">
+                    @if ($product->stock === 0)
+                        <div class="absolute top-2 right-2 z-10">
                             <span
                                 class="text-xs font-medium px-2.5 py-1 rounded-full bg-error/10 text-error border border-error/20">
-                                {{ __('product.out_of_stock', ['product' => $product->name]) }}
+                                {{ __('product.out_of_stock') }}
                             </span>
-                        @elseif($product->stock > 0)
+                        </div>
+                    @elseif($product->stock > 0)
+                        <div class="absolute top-2 right-2 z-10">
                             <span
-                                class="text-sm font-medium px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20">
+                                class="text-xs font-medium px-2.5 py-1 rounded-full bg-success/10 text-success border border-success/20">
                                 {{ __('product.in_stock') }}
                             </span>
-                        @endif
-                    </div>
+                        </div>
+                    @endif
+                    @if ($product->image)
+                        <div class="aspect-[4/3] overflow-hidden rounded-md">
+                            <img src="{{ Storage::url($product->image) }}" alt="{{ $product->name }}"
+                                class="w-full h-full object-cover object-center rounded-md transition-transform duration-300 group-hover:scale-105">
+                        </div>
+                    @else
+                        <div class="aspect-[4/3] bg-neutral/10 flex items-center justify-center rounded-md">
+                            <x-ri-shopping-bag-4-line class="size-12 text-base/30" />
+                        </div>
+                    @endif
+                </div>
+                <div class="flex-1 flex flex-col">
+                    <h2 class="text-xl font-bold mb-1 group-hover:text-primary transition-colors duration-200">
+                        {{ $product->name }}</h2>
 
                     @if (theme('direct_checkout', false) && $product->description)
-                        <div class="my-6 text-sm text-base/70">
-                            {!! html_entity_decode((string) $product->description) !!}
+                        <div class="mb-3 text-sm text-base/70 line-clamp-2">
+                            {!! strip_tags($product->description) !!}
                         </div>
                     @endif
 
-
                     <div class="mt-auto">
-                        <div class="mb-4 text-center">
+                        <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold text-primary">
                                 {{ $product->price()->formatted->price }}
                             </h3>
@@ -108,7 +115,6 @@
                                 class="block w-full" wire:navigate>
                                 <x-button.primary class="w-full justify-center">
                                     <x-ri-shopping-cart-fill class="size-4 mr-2" />
-
                                     {{ __('product.add_to_cart') }}
                                 </x-button.primary>
                             </a>

@@ -12,6 +12,13 @@
         <div class="max-w-7xl mx-auto px-6 lg:px-8 flex flex-row items-center justify-between w-full h-16">
 
             <div class="flex flex-row items-center">
+                <a href="{{ route('home') }}" class="flex flex-row items-center h-10" wire:navigate>
+                    <x-logo class="h-10 mr-2 rtl:ml-2" />
+                    @if (theme('logo_display', 'logo-and-name') !== 'logo-only')
+                        <span
+                            class="text-xl font-bold leading-none flex items-center text-base">{{ config('app.name') }}</span>
+                    @endif
+                </a>
                 <div class="md:flex hidden flex-row ml-7">
                     @foreach ($navigationLinks as $nav)
                         @if (isset($nav['children']) && count($nav['children']) > 0)
@@ -73,9 +80,9 @@
                             </div>
                         </x-slot:trigger>
                         <x-slot:content>
-                            <strong class="block p-2 text-xs font-semibold uppercase text-base/50"> Language </strong>
+                            <strong class="block p-2 text-xs font-semibold uppercase text-base/50">Language</strong>
                             <livewire:components.language-switch />
-                            <br/>
+                            <strong class="block p-2 text-xs font-semibold uppercase text-base/50 border-t border-neutral/10 mt-2">Currency</strong>
                             <livewire:components.currency-switch />
                         </x-slot:content>
                     </x-dropdown>
