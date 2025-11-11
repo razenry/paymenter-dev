@@ -1,4 +1,4 @@
-<div class="container mt-14">
+<div>
     <h1 class="text-2xl font-bold">
         {{ __('services.upgrade_service', ['service' => $service->product->name]) }}
     </h1>
