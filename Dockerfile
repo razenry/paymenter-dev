@@ -11,6 +11,9 @@ RUN apk add --no-cache --update ca-certificates dcron curl git supervisor tar un
     && apk del autoconf make g++ gcc libc-dev
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-autoloader --no-scripts
+
 COPY . ./
 RUN composer install --no-dev --optimize-autoloader
 
