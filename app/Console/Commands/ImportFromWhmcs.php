@@ -346,12 +346,14 @@ class ImportFromWhmcs extends Command
     {
         $this->info('Importing config options... (' . $this->count('tblproductconfigoptions') . ' records)');
 
-        $this->migrateInBatch('tblproductconfigoptions', 'SELECT * FROM tblproductconfigoptions LIMIT :limit OFFSET :offset', function ($records) {
+        $this->migrateInBatch('tblproductconfigoptions', 'SELECT tblproductconfigoptions.*,tblproductconfiggroups.name AS `group_name` FROM tblproductconfigoptions JOIN tblproductconfiggroups ON tblproductconfigoptions.gid = tblproductconfiggroups.id LIMIT :limit OFFSET :offset', function ($records) {
             $planData = [];
             $priceData = [];
 
             // First, insert parent config options and track their new IDs
             foreach ($records as $record) {
+                $groupname = $record['group_name'] ?: '';
+
                 if (strpos($record['optionname'], '|') !== false) {
                     $environmentVariable = explode('|', $record['optionname'])[0];
                     $name = explode('|', $record['optionname'])[1] ?? $record['optionname'];
@@ -360,6 +362,8 @@ class ImportFromWhmcs extends Command
                     $name = $record['optionname'];
                 }
 
+                $name = trim($groupname . ' - ' . $name);
+                logger()->info("Importing config option: $name", []);
                 $parentData = [
                     'name' => $name,
                     'env_variable' => $environmentVariable,
@@ -554,15 +558,18 @@ class ImportFromWhmcs extends Command
                 $stmt = $this->pdo->prepare('SELECT * FROM tblproductconfiglinks WHERE pid = :pid');
                 $stmt->bindValue(':pid', $record['id'], PDO::PARAM_INT);
                 $stmt->execute();
-                $configOptionRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $configOptionLinks = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $currentConfigOptions = ConfigOption::get()->where('parent_id', null);
 
-                foreach ($configOptionRecords as $configOptionGroupId) {
+                logger()->info('Found ' . count($configOptionLinks) . ' config option links for product: ' . $record['name'], []);
+                foreach ($configOptionLinks as $configOptionLink) {
                     // Get the config option group
-                    $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id LIMIT 1');
-                    $configOptionGroup->bindValue(':id', $configOptionGroupId['gid'], PDO::PARAM_INT);
+                    $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id');
+                    $configOptionGroup->bindValue(':id', $configOptionLink['gid'], PDO::PARAM_INT);
                     $configOptionGroup->execute();
                     $configOptionGroup = $configOptionGroup->fetch(PDO::FETCH_ASSOC);
                     if (!$configOptionGroup) {
+                        logger()->warning("Config option group not found for gid: {$configOptionLink['gid']}", []);
                         continue;
                     }
                     // Get config options in the group
@@ -572,9 +579,23 @@ class ImportFromWhmcs extends Command
                     $configOptions = $configOptions->fetchAll(PDO::FETCH_ASSOC);
                     foreach ($configOptions as $configOption) {
                         // Link config option to product
+                        $configName = $configOption['optionname'];
+                        if (strpos($configName, '|') !== false) {
+                            $configName = explode('|', $configName)[1] ?? $configName;
+                        }
+
+                        $configName = trim($configOptionGroup['name'] . ' - ' . $configName);
+                        logger()->info("Linking config option to product: $configName", []);
+
+                        $configId = $currentConfigOptions->where('name', $configName)->whereNull('parent_id')->first()?->id;
+                        if (!isset($configId)) {
+                            logger()->warning("Config option not found for name: $configName", []);
+                            continue;
+                        }
+
                         DB::table('config_option_products')->insert([
                             'product_id' => $record['id'],
-                            'config_option_id' => $configOption['id'],
+                            'config_option_id' => $configId,
                         ]);
                     }
                 }
