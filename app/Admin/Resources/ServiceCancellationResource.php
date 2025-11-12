@@ -58,8 +58,8 @@ class ServiceCancellationResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('service_id')
-                    ->formatStateUsing(fn ($record) => $record->service->product->name . ' - ' . $record->service->plan->name . '  #' . $record->service->id . ($record->service?->user ? ' (' . $record->service->user->email . ')' : ''))
+                TextColumn::make('id')
+                    ->formatStateUsing(fn ($record) =>  $record->service_id)
                     ->url(fn ($record) => ServiceResource::getUrl('edit', ['record' => $record->service_id]))
                     ->sortable(),
                 TextColumn::make('reason')

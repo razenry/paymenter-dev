@@ -363,7 +363,7 @@ class ImportFromWhmcs extends Command
                 }
 
                 $name = trim($groupname . ' - ' . $name);
-                logger()->info("Importing config option: $name", []);
+                logger()->debug("Importing config option: $name", []);
                 $parentData = [
                     'name' => $name,
                     'env_variable' => $environmentVariable,
@@ -561,7 +561,7 @@ class ImportFromWhmcs extends Command
                 $configOptionLinks = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 $currentConfigOptions = ConfigOption::get()->where('parent_id', null);
 
-                logger()->info('Found ' . count($configOptionLinks) . ' config option links for product: ' . $record['name'], []);
+                logger()->debug('Found ' . count($configOptionLinks) . ' config option links for product: ' . $record['name'], []);
                 foreach ($configOptionLinks as $configOptionLink) {
                     // Get the config option group
                     $configOptionGroup = $this->pdo->prepare('SELECT * FROM tblproductconfiggroups WHERE id = :id');
@@ -569,7 +569,7 @@ class ImportFromWhmcs extends Command
                     $configOptionGroup->execute();
                     $configOptionGroup = $configOptionGroup->fetch(PDO::FETCH_ASSOC);
                     if (!$configOptionGroup) {
-                        logger()->warning("Config option group not found for gid: {$configOptionLink['gid']}", []);
+                        logger()->debug("Config option group not found for gid: {$configOptionLink['gid']}", []);
                         continue;
                     }
                     // Get config options in the group
@@ -585,11 +585,11 @@ class ImportFromWhmcs extends Command
                         }
 
                         $configName = trim($configOptionGroup['name'] . ' - ' . $configName);
-                        logger()->info("Linking config option to product: $configName", []);
+                        logger()->debug("Linking config option to product: $configName", []);
 
                         $configId = $currentConfigOptions->where('name', $configName)->whereNull('parent_id')->first()?->id;
                         if (!isset($configId)) {
-                            logger()->warning("Config option not found for name: $configName", []);
+                            logger()->debug("Config option not found for name: $configName", []);
                             continue;
                         }
 
