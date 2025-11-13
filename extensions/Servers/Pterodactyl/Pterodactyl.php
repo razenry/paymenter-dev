@@ -52,9 +52,9 @@ class Pterodactyl extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->config('api_key'),
-            'Accept' => 'application/json',
-        ])->$method($req_url, $data);
+                    'Authorization' => 'Bearer ' . $this->config('api_key'),
+                    'Accept' => 'application/json',
+                ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             throw new Exception($response->json()['errors'][0]['detail']);
@@ -257,7 +257,7 @@ class Pterodactyl extends Server
         }
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
-
+        
         $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
         if (!isset($eggData['attributes'])) {
             throw new Exception('Could not fetch egg data');
@@ -290,6 +290,7 @@ class Pterodactyl extends Server
         $deploymentData = $this->generateDeploymentData($settings, $environment);
 
         $serverCreationData = [
+            'split_limit' => (int) $settings['split_limit'] ?? 0,
             'external_id' => (string) $service->id,
             'name' => isset($settings['servername']) ? $settings['servername'] : $service->product->name . ' #' . $service->id,
             'user' => (int) $user,
@@ -344,7 +345,7 @@ class Pterodactyl extends Server
                     'include' => ['allocations'],
                 ]);
                 $nodes = collect($nodes['data']);
-                $nodes_by_id = $nodes->mapWithKeys(fn ($node) => [$node['attributes']['id'] => $node['attributes']]);
+                $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
 
                 if (!$nodes_by_id->has($settings['node'])) {
                     throw new Exception('Node is not suitable for deployment.');
@@ -352,9 +353,9 @@ class Pterodactyl extends Server
                 $node = $nodes_by_id->get($settings['node']);
                 $availablePorts = collect($node['relationships']['allocations']['data']);
                 $availablePorts = $availablePorts
-                    ->filter(fn ($port) => !$port['attributes']['assigned'])
+                    ->filter(fn($port) => !$port['attributes']['assigned'])
                     ->map(
-                        fn ($port) => [
+                        fn($port) => [
                             'port' => $port['attributes']['port'],
                             'id' => $port['attributes']['id'],
                         ]
@@ -385,14 +386,40 @@ class Pterodactyl extends Server
         }
 
         try {
-            // Example: {"SERVER_PORT": 7777, "NONE": [7778, 7779], "QUERY_PORT": 2701, "RCON_PORT": 27020}
-            $port_array = json_decode($settings['port_array'], true);
+            $input = trim($settings['port_array']);
+            $port_array = json_decode($input, true);
+
             if (json_last_error() !== JSON_ERROR_NONE) {
-                throw new Exception('JSON decode error: ' . json_last_error_msg());
+                $ports = [];
+
+                // Split by comma
+                foreach (explode(',', $input) as $part) {
+                    $part = trim($part);
+                    if (preg_match('/^(\d+)-(\d+)$/', $part, $m)) {
+                        // Range
+                        $start = (int) $m[1];
+                        $end = (int) $m[2];
+                        if ($start > $end) {
+                            [$start, $end] = [$end, $start];
+                        }
+                        $ports = array_merge($ports, range($start, $end));
+                    } elseif (is_numeric($part)) {
+                        // Single number
+                        $ports[] = (int) $part;
+                    }
+                }
+
+                if (empty($ports)) {
+                    throw new Exception('Invalid port array format');
+                }
+
+                $port_array = ['NONE' => $ports];
             }
         } catch (Exception $e) {
-            throw new Exception('Invalid JSON in port array');
+            throw new Exception('Invalid port array input');
         }
+
+
 
         if (!is_array($port_array)) {
             throw new Exception('Port array must be an array');
@@ -405,7 +432,7 @@ class Pterodactyl extends Server
             'include' => ['allocations'],
         ]);
         $nodes = collect($nodes['data']);
-        $nodes_by_id = $nodes->mapWithKeys(fn ($node) => [$node['attributes']['id'] => $node['attributes']]);
+        $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
 
         if ($settings['node']) {
             // If the product's node id is not in the deployable nodes array, throw error.
@@ -416,9 +443,9 @@ class Pterodactyl extends Server
             $node = $nodes_by_id->get($settings['node']);
             $availablePorts = collect($node['relationships']['allocations']['data']);
             $availablePorts = $availablePorts
-                ->filter(fn ($port) => !$port['attributes']['assigned'])
+                ->filter(fn($port) => !$port['attributes']['assigned'])
                 ->map(
-                    fn ($port) => [
+                    fn($port) => [
                         'port' => $port['attributes']['port'],
                         'id' => $port['attributes']['id'],
                     ]
@@ -436,9 +463,9 @@ class Pterodactyl extends Server
             foreach ($nodes as $index => $node) {
                 $availablePorts = collect($node['attributes']['relationships']['allocations']['data']);
                 $availablePorts = $availablePorts
-                    ->filter(fn ($port) => !$port['attributes']['assigned'])
+                    ->filter(fn($port) => !$port['attributes']['assigned'])
                     ->map(
-                        fn ($port) => [
+                        fn($port) => [
                             'port' => $port['attributes']['port'],
                             'id' => $port['attributes']['id'],
                         ]
