@@ -21,7 +21,7 @@ class SyncConfigJob implements ShouldQueue
 
     public function handle(): void
     {
-       logger()-info('Starting service sync...');
+       logger()->info('Starting service sync...');
 
         $configOptions = ConfigOption::all();
         $configOptionProducts = ConfigOptionProduct::all();
