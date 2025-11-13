@@ -2,7 +2,6 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Category;
 use App\Models\ConfigOption;
 use App\Models\CustomProperty;
 use App\Models\Product;
@@ -13,7 +12,6 @@ use App\Providers\SettingsProvider;
 use Closure;
 use DB;
 use Illuminate\Console\Command;
-use Illuminate\Http\Client\Batch;
 use Log;
 use PDO;
 use PDOException;
@@ -91,6 +89,7 @@ class ImportFromWhmcs extends Command
             $this->importInvoices();
             $this->importInvoiceItems();
             $this->importPayments();
+            $this->importServiceConfigs();
 
             DB::statement('SET foreign_key_checks=1');
 
@@ -989,5 +988,96 @@ class ImportFromWhmcs extends Command
 
             DB::table('invoice_transactions')->insert($data);
         });
+    }
+
+    private function importServiceConfigs()
+    {
+        $this->info('Importing service configurations... (' . $this->count('tblhostingconfigoptions') . ' records)');
+
+        // Preload static reference data once
+        $configOptions = ConfigOption::all();
+
+        $stmt = $this->pdo->query(
+            'SELECT o.*, g.name AS group_name 
+         FROM tblproductconfigoptions o
+         JOIN tblproductconfiggroups g ON o.gid = g.id'
+        );
+        $tblConfigOptions = collect($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+        $stmt = $this->pdo->query('SELECT * FROM tblproductconfigoptionssub');
+        $tblConfigOptionsSubs = collect($stmt->fetchAll(PDO::FETCH_ASSOC));
+
+        // Migrate in batches based on tblhostingconfigoptions
+        $this->migrateInBatch(
+            'tblhostingconfigoptions',
+            'SELECT * FROM tblhostingconfigoptions LIMIT :limit OFFSET :offset',
+            function ($records) use ($tblConfigOptions, $tblConfigOptionsSubs, $configOptions) {
+                $inserts = [];
+                $now = now();
+
+                logger()->debug('Processing ' . count($records) . ' service config option records', [
+                    "items" => $records,
+                ]);
+                foreach ($records as $tblHostingConfigOption) {
+                    $serviceId = $tblHostingConfigOption['relid'];
+                    $tblHostingConfigId = $tblHostingConfigOption['configid'];
+                    $tblHostingConfigValue = $tblHostingConfigOption['optionid'];
+                    $tblConfigOption = $tblConfigOptions->firstWhere('id', $tblHostingConfigId);
+                    $tblConfigOptionSub = $tblConfigOptionsSubs->firstWhere('id', $tblHostingConfigValue);
+
+                    if (!$tblConfigOption || !$tblConfigOptionSub) {
+                        continue;
+                    }
+
+                    $groupName = trim($tblConfigOption['group_name']);
+                    $configName = $tblConfigOption['optionname'];
+                    $configSubName = $tblConfigOptionSub['optionname'];
+
+                    // Clean up config name
+                    if (strpos($configName, '|') !== false) {
+                        $configName = explode('|', $configName, 2)[1];
+                    }
+                    // Clean up config sub name
+                    if (strpos($configSubName, '|') !== false) {
+                        $configSubName = explode('|', $configSubName, 2)[1];
+                    }
+
+                    $configName = trim($groupName . ' - ' . $configName);
+
+                    $configOption = $configOptions
+                        ->where('name', $configName)
+                        ->whereNull('parent_id')
+                        ->first();
+
+                    if (!$configOption) {
+                        continue;
+                    }
+
+                    $configOptionSub = $configOptions
+                        ->where('name', $configSubName)
+                        ->where('parent_id', $configOption->id)
+                        ->first();
+
+                    if (!$configOptionSub) {
+                        continue;
+                    }
+
+                    $inserts[] = [
+                        'configurable_type' => Service::class,
+                        'configurable_id' => $serviceId,
+                        'config_option_id' => $configOption->id,
+                        'config_value_id' => $configOptionSub->id,
+                        'created_at' => $now,
+                        'updated_at' => $now,
+                    ];
+                }
+
+                if (!empty($inserts)) {
+                    DB::table('service_configs')->insert($inserts);
+                }
+            }
+        );
+
+        $this->info('Service configurations import completed successfully.');
     }
 }
