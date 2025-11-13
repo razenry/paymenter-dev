@@ -21,7 +21,7 @@ class SyncConfigJob implements ShouldQueue
 
     public function handle(): void
     {
-        Log::info('Starting service sync...');
+        logger() - info('Starting service sync...');
 
         $configOptions = ConfigOption::all();
         $configOptionProducts = ConfigOptionProduct::all();
@@ -35,14 +35,16 @@ class SyncConfigJob implements ShouldQueue
 
             foreach ($relatedConfigs as $config) {
                 $childConfig = $configOptions->firstWhere('parent_id', $config->id);
-                if (!$childConfig) continue;
+                if (!$childConfig)
+                    continue;
 
                 $alreadyExists = $existingConfigs
                     ->where('config_option_id', $config->id)
                     ->where('configurable_id', $service->id)
                     ->isNotEmpty();
 
-                if ($alreadyExists) continue;
+                if ($alreadyExists)
+                    continue;
 
                 DB::table('service_configs')->insert([
                     'configurable_type' => Service::class,
@@ -54,9 +56,9 @@ class SyncConfigJob implements ShouldQueue
                 ]);
             }
 
-            Log::info("Service {$service->id} synced.");
+            logger() - info("Service {$service->id} synced.");
         }
 
-        Log::info('Service sync completed.');
+        logger() - info('Service sync completed.');
     }
 }
