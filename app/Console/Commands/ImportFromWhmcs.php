@@ -1087,7 +1087,7 @@ class ImportFromWhmcs extends Command
         $this->info("Importing pterodactyl configurations...");
 
         $products = Product::all();
-        $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts WHERE servertype = \'pterodactyl\'', function ($records) use ($products) {
+        $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts WHERE servertype = \'pterodactyl\'  LIMIT :limit OFFSET :offset', function ($records) use ($products) {
             foreach ($records as $record) {
                 $id = $record['id'];
                 $product = $products->where('id', $id);
@@ -1116,26 +1116,26 @@ class ImportFromWhmcs extends Command
                 $allocations = $record['configoption18'];
                 $split_limit = $record['configoption19'];
 
-                Setting::insert([
-                    ["key" => "cpu", "value" => $cpu, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "disk", "value" => $disk, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "memory", "value" => $memory, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "swap", "value" => $swap, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "location_id", "value" => $location_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "dedicated_ip", "value" => $dedicated_ip, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "nest_id", "value" => $nest_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "egg_id", "value" => $egg_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "io", "value" => $io, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "pack_id", "value" => $pack_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "port_range", "value" => $port_range, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "startup", "value" => $startup, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "image", "value" => $image, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "databases", "value" => $databases, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "server_name", "value" => $server_name, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "oom_disabled", "value" => $oom_disabled, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "backups", "value" => $backups, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "allocations", "value" => $allocations, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
-                    ["key" => "split_limit", "value" => $split_limit, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                 DB::table('settings')->insert([
+                    ["key" => "cpu", "value" => $cpu, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "disk", "value" => $disk, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "memory", "value" => $memory, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "swap", "value" => $swap, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "location_id", "value" => $location_id, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "dedicated_ip", "value" => $dedicated_ip, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "nest_id", "value" => $nest_id, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "egg_id", "value" => $egg_id, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "io", "value" => $io, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "pack_id", "value" => $pack_id, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "port_range", "value" => $port_range, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "startup", "value" => $startup, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "image", "value" => $image, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "databases", "value" => $databases, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "server_name", "value" => $server_name, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "oom_disabled", "value" => $oom_disabled, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "backups", "value" => $backups, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "allocations", "value" => $allocations, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "split_limit", "value" => $split_limit, "type" => "string", "settingable_type" => Product::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
                 ]);
             }
         });
