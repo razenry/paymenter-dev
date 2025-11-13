@@ -53,8 +53,6 @@ class SyncConfigJob implements ShouldQueue
                     'updated_at' => now(),
                 ]);
             }
-
-            logger()->info("Service {$service->id} synced.");
         }
 
         logger()->info('Service sync completed.');
