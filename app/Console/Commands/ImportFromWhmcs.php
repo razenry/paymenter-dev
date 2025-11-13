@@ -90,6 +90,7 @@ class ImportFromWhmcs extends Command
             $this->importInvoiceItems();
             $this->importPayments();
             $this->importServiceConfigs();
+            $this->importPterodactylProducts();
 
             DB::statement('SET foreign_key_checks=1');
 
@@ -1079,5 +1080,64 @@ class ImportFromWhmcs extends Command
         );
 
         $this->info('Service configurations import completed successfully.');
+    }
+
+    private function importPterodactylProducts()
+    {
+        $this->info("Importing pterodactyl configurations...");
+
+        $products = Product::all();
+        $this->migrateInBatch('tblproducts', 'SELECT * FROM tblproducts WHERE servertype = \'pterodactyl\'', function ($records) use ($products) {
+            foreach ($records as $record) {
+                $id = $record['id'];
+                $product = $products->where('id', $id);
+                if (!isset($product)) {
+                    $this->info("Product for {$id} is not found");
+                    continue;
+                }
+
+                $cpu = $record['configoption1'];
+                $disk = $record['configoption2'];
+                $memory = $record['configoption3'];
+                $swap = $record['configoption4'];
+                $location_id = $record['configoption5'];
+                $dedicated_ip = $record['configoption6'];
+                $nest_id = $record['configoption7'];
+                $egg_id = $record['configoption8'];
+                $io = $record['configoption9'];
+                $pack_id = $record['configoption10'];
+                $port_range = $record['configoption11'];
+                $startup = $record['configoption12'];
+                $image = $record['configoption13'];
+                $databases = $record['configoption14'];
+                $server_name = $record['configoption15'];
+                $oom_disabled = $record['configoption16'];
+                $backups = $record['configoption17'];
+                $allocations = $record['configoption18'];
+                $split_limit = $record['configoption19'];
+
+                Setting::insert([
+                    ["key" => "cpu", "value" => $cpu, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "disk", "value" => $disk, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "memory", "value" => $memory, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "swap", "value" => $swap, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "location_id", "value" => $location_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "dedicated_ip", "value" => $dedicated_ip, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "nest_id", "value" => $nest_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "egg_id", "value" => $egg_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "io", "value" => $io, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "pack_id", "value" => $pack_id, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "port_range", "value" => $port_range, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "startup", "value" => $startup, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "image", "value" => $image, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "databases", "value" => $databases, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "server_name", "value" => $server_name, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "oom_disabled", "value" => $oom_disabled, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "backups", "value" => $backups, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "allocations", "value" => $allocations, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                    ["key" => "split_limit", "value" => $split_limit, "type" => "string", "settingable_type" => Setting::class, "settingable_id" => $id, "created_at" => now(), "updated_at" => now()],
+                ]);
+            }
+        });
     }
 }

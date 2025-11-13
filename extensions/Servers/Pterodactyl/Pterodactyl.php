@@ -247,6 +247,13 @@ class Pterodactyl extends Server
                 'description' => 'Terminates the server if it breaches the memory limits. Enabling OOM killer may cause server processes to exit unexpectedly.',
                 'type' => 'checkbox',
             ],
+            [
+                'name' => 'split_limit',
+                'label' => 'Split Limit',
+                'type' => 'number',
+                'required' => true,
+                'min_value' => 0,
+            ],
         ];
     }
 
@@ -257,7 +264,7 @@ class Pterodactyl extends Server
         }
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
-        
+
         $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
         if (!isset($eggData['attributes'])) {
             throw new Exception('Could not fetch egg data');
