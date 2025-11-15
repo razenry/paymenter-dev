@@ -44,6 +44,7 @@ class Cart extends Component
 
             return;
         }
+
         $this->total = new Price(['price' => ClassesCart::items()->sum(fn ($item) => $item->price->total * $item->quantity), 'currency' => ClassesCart::get()->currency]);
         $this->gateways = ExtensionHelper::getCheckoutGateways($this->total->total, $this->total->currency->code, 'cart', ClassesCart::items());
         if (count($this->gateways) > 0 && !array_search($this->gateway, array_column($this->gateways, 'id')) !== false) {
@@ -53,9 +54,19 @@ class Cart extends Component
 
     public function applyCoupon()
     {
+        $subTotal = $this->total->subtotal;
+        $user = ClassesCart::get()->user;
+        if (!isset($user)) {
+            $this->notify('You must be logged in to apply a coupon!', 'error');
+            $this->coupon = null;
+
+            return;
+        }
+
         if ($this->coupon && ClassesCart::get()->coupon_id) {
             return $this->notify('Coupon code already applied', 'error');
         }
+
         try {
             ClassesCart::applyCoupon($this->coupon);
         } catch (DisplayException $e) {
@@ -67,7 +78,11 @@ class Cart extends Component
         ClassesCart::get()->load('coupon');
         $this->coupon = ClassesCart::get()->coupon;
         $this->updateTotal();
-        $this->notify('Coupon code applied successfully', 'success');
+
+        $totalCoupon = $subTotal - $this->total->subtotal;
+        $this->notify("Applied {$this->total->format($totalCoupon)} Coupon", 'success');
+
+        return redirect(request()->header('Referer'));
     }
 
     public function removeCoupon()

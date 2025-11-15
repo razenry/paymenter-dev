@@ -84,16 +84,40 @@ class CartItem extends Model
 
                 if ($this->cart->coupon_id && $this->cart->coupon) {
                     $coupon = $this->cart->coupon;
-                    $pdiscount = $coupon->calculateDiscount($price->price);
-                    $sdiscount = $coupon->calculateDiscount($price->setup_fee, 'setup_fee');
+                    $user = $this->cart->user;
+                    $applyOnce = $coupon->apply_once_only;
 
-                    $price->price -= $pdiscount;
-                    $price->setup_fee -= $sdiscount;
+                    // Fetch all product IDs eligible for this coupon
+                    $eligibleProductIds = $coupon->products()->pluck('products.id')->all();
 
-                    $price->setDiscount($pdiscount + $sdiscount);
+                    // Skip if the current product is not eligible
+                    if (!empty($eligibleProductIds) && !in_array($this->product->id, $eligibleProductIds)) {
+                        return $price;
+                    }
+
+                    // Handle apply-once coupon
+                    if ($applyOnce) {
+                        $eligibleItems = $this->cart->items()
+                            ->get()
+                            ->filter(fn ($item) => empty($eligibleProductIds) || in_array($item->product->id, $eligibleProductIds));
+
+                        $firstEligibleItem = $eligibleItems->first();
+                        if (!$firstEligibleItem || $firstEligibleItem->id !== $this->id) {
+                            return $price;
+                        }
+                    }
+
+                    // Apply discounts
+                    $productDiscount = $coupon->calculateDiscount($price->price, $user, $price->currency);
+                    $setupDiscount = $coupon->calculateDiscount($price->setup_fee, $user, $price->currency, 'setup_fee');
+
+                    $price->price -= $productDiscount;
+                    $price->setup_fee -= $setupDiscount;
+                    $price->setDiscount($productDiscount + $setupDiscount);
                 }
 
                 return $price;
+
             }
         );
     }

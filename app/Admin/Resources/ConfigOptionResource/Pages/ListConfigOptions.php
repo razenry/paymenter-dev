@@ -4,15 +4,10 @@ namespace App\Admin\Resources\ConfigOptionResource\Pages;
 
 use App\Admin\Resources\ConfigOptionResource;
 use App\Jobs\Services\SyncConfigJob;
-use App\Models\ConfigOption;
-use App\Models\ConfigOptionProduct;
-use App\Models\Service;
-use App\Models\ServiceConfig;
 use Exception;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Support\Facades\DB;
 
 class ListConfigOptions extends ListRecords
 {
@@ -31,7 +26,8 @@ class ListConfigOptions extends ListRecords
                     try {
                         SyncConfigJob::dispatch();
                         Notification::make()
-                            ->title('Services synced successfully!')
+                            ->title('Sync started')
+                            ->body('Service synchronization has been queued.')
                             ->success()
                             ->send();
                     } catch (Exception $e) {
@@ -49,5 +45,4 @@ class ListConfigOptions extends ListRecords
                 }),
         ];
     }
-
 }

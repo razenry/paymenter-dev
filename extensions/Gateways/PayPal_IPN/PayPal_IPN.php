@@ -93,4 +93,10 @@ class PayPal_IPN extends Gateway
             ExtensionHelper::addPayment($request->item_number, 'PayPal', $request->mc_gross, $request->mc_fee, transactionId: $request->txn_id);
         }
     }
+
+    public function canUseGateway($total, $currency, $type, $items = [])
+    {
+        $currencies = ["USD", "EUR", "GBP"];
+        return in_array($currency, $currencies);
+    }
 }

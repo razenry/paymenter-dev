@@ -202,12 +202,13 @@ class Service extends Model implements Auditable
     public function calculatePrice()
     {
         // Calculate the price based on the plan and config options
-        $price = $this->plan->price()->price;
+        $price = $this->plan->price();
+        $priceAmt = $price->price;
 
-        $this->configs->each(function ($config) use (&$price) {
+        $this->configs->each(function ($config) use (&$priceAmt) {
             $configValue = $config->configValue;
             if ($configValue) {
-                $price += $configValue->price(null, $this->plan->billing_period, $this->plan->billing_unit, $this->currency_code)->price;
+                $priceAmt += $configValue->price(null, $this->plan->billing_period, $this->plan->billing_unit, $this->currency_code)->price;
             }
         });
 
@@ -216,17 +217,18 @@ class Service extends Model implements Auditable
             $invoices = $this->invoices()->where('status', 'paid')->count() + 1;
             // If it already used for the recurring period, do not apply the discount
             if ($this->coupon->recurring == 0 || $invoices <= $this->coupon->recurring) {
-                $discount = $this->coupon->calculateDiscount($price);
-                $price -= $discount;
+                $user = $this->user;
+                $discount = $this->coupon->calculateDiscount($priceAmt, $user, $price->currency);
+                $priceAmt -= $discount;
             }
         }
 
-        $price = (new Price([
-            'price' => $price,
+        $priceAmt = (new Price([
+            'price' => $priceAmt,
             'currency' => $this->currency,
         ], apply_exclusive_tax: true, tax: Settings::tax($this->user)))->price;
 
-        return number_format($price, 2, '.', '');
+        return number_format($priceAmt, 2, '.', '');
     }
 
     public function upgrade()

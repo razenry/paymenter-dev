@@ -32,4 +32,9 @@ class Role extends Model implements Auditable
     {
         return $this->belongsToMany(User::class);
     }
+
+    public function coupons()
+    {
+        return Coupon::whereJsonContains('allowed_roles', $this->role_id)->get();
+    }
 }

@@ -6,6 +6,7 @@ use App\Exceptions\DisplayException;
 use App\Models\Coupon;
 use App\Models\Plan;
 use App\Models\Product;
+use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Session;
@@ -131,6 +132,14 @@ class Cart
      */
     public static function validateCoupon($coupon_code)
     {
+        if (!Auth::check()) {
+            throw new DisplayException('You must be logged in to apply a coupon!');
+        }
+
+        if (empty($coupon_code)) {
+            throw new DisplayException('No coupon code provided. Please enter a valid coupon.');
+        }
+
         $coupon = Coupon::where('code', $coupon_code)->first();
 
         if (!$coupon) {
@@ -146,7 +155,7 @@ class Cart
         if ($coupon->max_uses && $coupon->services->count() >= $coupon->max_uses) {
             throw new DisplayException('Coupon code has reached its maximum uses');
         }
-        if (Auth::check() && $coupon->hasExceededMaxUsesPerUser(Auth::id())) {
+        if ($coupon->hasExceededMaxUsesPerUser(Auth::id())) {
             throw new DisplayException('You have already used this coupon the maximum number of times allowed');
         }
 

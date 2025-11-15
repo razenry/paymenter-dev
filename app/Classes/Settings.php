@@ -149,6 +149,12 @@ class Settings
                         new Cidr(allowWildCard: true),
                     ],
                 ],
+                [
+                    'name' => 'force_admin_2fa',
+                    'label' => 'Force Admin 2FA',
+                    'type' => 'checkbox',
+                    'default' => false,
+                ],
             ],
 
             'social-login' => [

@@ -7,16 +7,20 @@ use App\Admin\Resources\CouponResource\Pages\EditCoupon;
 use App\Admin\Resources\CouponResource\Pages\ListCoupons;
 use App\Admin\Resources\CouponResource\RelationManagers\ServicesRelationManager;
 use App\Models\Coupon;
+use App\Models\Currency;
+use App\Models\Product;
+use App\Models\Role;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
-use Filament\Support\RawJs;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -41,20 +45,6 @@ class CouponResource extends Resource
                     ->unique(static::getModel(), 'code', ignoreRecord: true)
                     ->placeholder('Enter the code of the coupon'),
 
-                TextInput::make('value')
-                    ->label('Value')
-                    ->required()
-                    ->numeric()
-                    ->minValue(0)
-                    ->maxValue(fn (Get $get) => $get('type') === 'percentage' ? 100 : null)
-                    ->mask(RawJs::make(
-                        <<<'JS'
-                            $money($input, '.', '', 2)
-                        JS
-                    ))
-                    ->suffix(fn (Get $get) => $get('type') === 'percentage' ? '%' : config('settings.default_currency'))
-                    ->placeholder('Enter the value of the coupon'),
-
                 Select::make('type')
                     ->label('Type')
                     ->required()
@@ -65,6 +55,7 @@ class CouponResource extends Resource
                         'fixed' => 'Fixed amount',
                     ])
                     ->placeholder('Select the type of the coupon'),
+
                 Select::make('applies_to')
                     ->label('Applies To')
                     ->required()
@@ -80,21 +71,17 @@ class CouponResource extends Resource
                     ->numeric()
                     ->nullable()
                     ->minValue(0)
-                    ->hidden(fn (Get $get) => $get('applies_to') === 'free_setup')
-                    ->placeholder('How many billing cycles the discount will be applied')
-                    ->helperText('Enter 0 to apply it to all billing cycles, 1 (or leave empty) to apply it only to the first billing cycle, etc.'),
+                    ->placeholder('How many billing cycles the discount will be applied'),
 
                 TextInput::make('max_uses')
                     ->label('Max Uses')
                     ->numeric()
-                    ->minValue(0)
-                    ->placeholder('Enter the maximum number of total uses of the coupon'),
+                    ->minValue(0),
 
                 TextInput::make('max_uses_per_user')
                     ->label('Max Uses Per User')
                     ->numeric()
-                    ->minValue(0)
-                    ->placeholder('Enter the maximum number of uses per user'),
+                    ->minValue(0),
 
                 DatePicker::make('starts_at')
                     ->label('Starts At'),
@@ -102,13 +89,90 @@ class CouponResource extends Resource
                 DatePicker::make('expires_at')
                     ->label('Expires At'),
 
+                Select::make('allowed_roles')
+                    ->label('Allowed Roles')
+                    ->multiple()
+                    ->options(
+                        Role::query()
+                            ->orderBy('name')
+                            ->pluck('name', 'id')
+                    )
+                    ->searchable()
+                    ->preload()
+                    ->placeholder('Select roles allowed to use this coupon'),
+
                 Select::make('products')
                     ->label('Products')
                     ->relationship('products', 'name')
                     ->multiple()
+                    ->searchable()
                     ->preload()
-                    ->placeholder('Select the products that this coupon applies to')
-                    ->hint('Leave empty to apply the coupon to all products'),
+                    ->options(
+                        Product::query()
+                            ->with('category') // make sure Product has category() relationship
+                            ->orderBy('category_id')
+                            ->orderBy('name')
+                            ->get()
+                            ->mapWithKeys(fn ($p) => [
+                                $p->id => $p->category ? $p->category->name . ' – ' . $p->name : $p->name,
+                            ])
+                    )
+                    ->placeholder('Select the products'),
+
+                Toggle::make('new_users_only')
+                    ->label('New Users Only')
+                    ->default(false)
+                    ->inline(false)
+                    ->reactive()
+                    ->disabled(fn (Get $get) => $get('existing_users_only') === true),
+
+                Toggle::make('existing_users_only')
+                    ->label('Existing Users Only')
+                    ->default(false)
+                    ->inline(false)
+                    ->reactive()
+                    ->disabled(fn (Get $get) => $get('new_users_only') === true),
+
+                Toggle::make('apply_once_only')
+                    ->label('Apply Once Only')
+                    ->default(false)
+                    ->inline(false)
+                    ->reactive(),
+
+                // Percentage or fixed base value
+                TextInput::make('value')
+                    ->label('Value')
+                    ->required()
+                    ->numeric()
+                    ->minValue(0)
+                    ->hidden(fn (Get $get) => $get('type') === 'fixed') // HIDE when using coupon_values
+                    ->suffix(fn (Get $get) => '%')
+                    ->placeholder('Enter the value of the coupon'),
+
+                // Coupon values repeater (for fixed type)
+                Repeater::make('couponValues')
+                    ->relationship()
+                    ->hidden(fn (Get $get) => $get('type') !== 'fixed')
+                    ->columns(2)
+                    ->schema([
+                        Select::make('currency')
+                            ->label('Currency')
+                            ->required()
+                            ->options(
+                                Currency::query()
+                                    ->orderBy('code')
+                                    ->pluck('code', 'code')
+                            )
+                            ->searchable()
+                            ->preload(),
+
+                        TextInput::make('value')
+                            ->label('Value')
+                            ->numeric()
+                            ->required()
+                            ->minValue(0),
+                    ])
+                    ->addActionLabel('Add Coupon Value')->columnSpanFull(),
             ]);
     }
 
@@ -116,12 +180,10 @@ class CouponResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('code')->searchable(),
-                TextColumn::make('value')->searchable()->formatStateUsing(fn ($record) => $record->value . ($record->type === 'percentage' ? '%' : config('settings.default_currency'))),
+                TextColumn::make('code')
+                    ->searchable(),
             ])
-            ->filters([
-                //
-            ])
+            ->filters([])
             ->recordActions([
                 EditAction::make(),
             ])

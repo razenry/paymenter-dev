@@ -52,9 +52,9 @@ class Pterodactyl extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->config('api_key'),
-                    'Accept' => 'application/json',
-                ])->$method($req_url, $data);
+            'Authorization' => 'Bearer ' . $this->config('api_key'),
+            'Accept' => 'application/json',
+        ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             throw new Exception($response->json()['errors'][0]['detail']);
@@ -108,6 +108,7 @@ class Pterodactyl extends Server
                 'name' => 'node',
                 'label' => 'Node',
                 'type' => 'select',
+                'required' => false,
                 'description' => 'Fill in to install the server on a specific node',
                 'options' => $nodeList,
             ],
@@ -117,7 +118,7 @@ class Pterodactyl extends Server
                 'type' => 'select',
                 'options' => $nestList,
                 'description' => 'Nest ID to fetch the eggs from',
-                'required' => true,
+                'required' => false,
                 // Lets fetch the eggs every time the nest id changes
                 'live' => true,
             ],
@@ -126,14 +127,14 @@ class Pterodactyl extends Server
                 'label' => 'Egg ID',
                 'type' => 'select',
                 'options' => $eggList,
-                'required' => true,
+                'required' => false,
             ],
             [
                 'name' => 'memory',
                 'label' => 'Memory',
                 'type' => 'number',
                 'suffix' => 'MiB',
-                'required' => true,
+                'required' => false,
                 'validation' => 'numeric',
                 'min_value' => 0,
                 'description' => 'Set to 0 for unlimited',
@@ -144,7 +145,7 @@ class Pterodactyl extends Server
                 'type' => 'number',
                 'min_value' => -1,
                 'suffix' => 'MiB',
-                'required' => true,
+                'required' => false,
                 'description' => 'Set to -1 for unlimited, or to 0 to disable swap',
             ],
             [
@@ -152,7 +153,7 @@ class Pterodactyl extends Server
                 'label' => 'Disk',
                 'type' => 'number',
                 'suffix' => 'MiB',
-                'required' => true,
+                'required' => false,
                 'min_value' => 0,
                 'description' => 'Set to 0 for unlimited',
             ],
@@ -160,7 +161,7 @@ class Pterodactyl extends Server
                 'name' => 'io',
                 'label' => 'IO Weight',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'default' => 500,
                 'min_value' => 10,
                 'max_value' => 1000,
@@ -171,7 +172,7 @@ class Pterodactyl extends Server
                 'name' => 'cpu',
                 'label' => 'CPU Limit',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'min_value' => 0,
                 'suffix' => '%',
                 'description' => 'Set to 0 for unlimited',
@@ -187,21 +188,22 @@ class Pterodactyl extends Server
                 'name' => 'databases',
                 'label' => 'Databases',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'min_value' => 0,
             ],
             [
                 'name' => 'backups',
                 'label' => 'Backups',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'min_value' => 0,
             ],
             [
-                'name' => 'additional_allocations',
+                // IMPORTANT: CHANGED FROM additional_allocations
+                'name' => 'allocations',
                 'label' => 'Additional Allocations',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'min_value' => 0,
             ],
             [
@@ -251,7 +253,7 @@ class Pterodactyl extends Server
                 'name' => 'split_limit',
                 'label' => 'Split Limit',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'min_value' => 0,
             ],
         ];
@@ -317,7 +319,7 @@ class Pterodactyl extends Server
             ],
             'feature_limits' => [
                 'databases' => (int) $settings['databases'],
-                'allocations' => $deploymentData['allocations_needed'] + (int) $settings['additional_allocations'],
+                'allocations' => $deploymentData['allocations_needed'] + (int) $settings['allocations'],
                 'backups' => (int) $settings['backups'],
             ],
             'start_on_completion' => $settings['start_on_completion'] ?? false,
@@ -352,7 +354,7 @@ class Pterodactyl extends Server
                     'include' => ['allocations'],
                 ]);
                 $nodes = collect($nodes['data']);
-                $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
+                $nodes_by_id = $nodes->mapWithKeys(fn ($node) => [$node['attributes']['id'] => $node['attributes']]);
 
                 if (!$nodes_by_id->has($settings['node'])) {
                     throw new Exception('Node is not suitable for deployment.');
@@ -360,9 +362,9 @@ class Pterodactyl extends Server
                 $node = $nodes_by_id->get($settings['node']);
                 $availablePorts = collect($node['relationships']['allocations']['data']);
                 $availablePorts = $availablePorts
-                    ->filter(fn($port) => !$port['attributes']['assigned'])
+                    ->filter(fn ($port) => !$port['attributes']['assigned'])
                     ->map(
-                        fn($port) => [
+                        fn ($port) => [
                             'port' => $port['attributes']['port'],
                             'id' => $port['attributes']['id'],
                         ]
@@ -426,8 +428,6 @@ class Pterodactyl extends Server
             throw new Exception('Invalid port array input');
         }
 
-
-
         if (!is_array($port_array)) {
             throw new Exception('Port array must be an array');
         }
@@ -439,7 +439,7 @@ class Pterodactyl extends Server
             'include' => ['allocations'],
         ]);
         $nodes = collect($nodes['data']);
-        $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
+        $nodes_by_id = $nodes->mapWithKeys(fn ($node) => [$node['attributes']['id'] => $node['attributes']]);
 
         if ($settings['node']) {
             // If the product's node id is not in the deployable nodes array, throw error.
@@ -450,9 +450,9 @@ class Pterodactyl extends Server
             $node = $nodes_by_id->get($settings['node']);
             $availablePorts = collect($node['relationships']['allocations']['data']);
             $availablePorts = $availablePorts
-                ->filter(fn($port) => !$port['attributes']['assigned'])
+                ->filter(fn ($port) => !$port['attributes']['assigned'])
                 ->map(
-                    fn($port) => [
+                    fn ($port) => [
                         'port' => $port['attributes']['port'],
                         'id' => $port['attributes']['id'],
                     ]
@@ -470,9 +470,9 @@ class Pterodactyl extends Server
             foreach ($nodes as $index => $node) {
                 $availablePorts = collect($node['attributes']['relationships']['allocations']['data']);
                 $availablePorts = $availablePorts
-                    ->filter(fn($port) => !$port['attributes']['assigned'])
+                    ->filter(fn ($port) => !$port['attributes']['assigned'])
                     ->map(
-                        fn($port) => [
+                        fn ($port) => [
                             'port' => $port['attributes']['port'],
                             'id' => $port['attributes']['id'],
                         ]
@@ -633,7 +633,7 @@ class Pterodactyl extends Server
             'threads' => $settings['cpu_pinning'] ?? null,
             'feature_limits' => [
                 'databases' => $settings['databases'],
-                'allocations' => $settings['additional_allocations'],
+                'allocations' => $settings['allocations'],
                 'backups' => $settings['backups'],
             ],
         ];
@@ -689,7 +689,7 @@ class Pterodactyl extends Server
         return match ($key) {
             'egg' => ['key' => 'egg_id', 'value' => $value],
             'nest' => ['key' => 'nest_id', 'value' => $value],
-            'allocation' => ['key' => 'additional_allocations', 'value' => $value],
+            'allocation' => ['key' => 'allocations', 'value' => $value],
             'location' => ['key' => 'location_ids', 'value' => json_encode([$value]), 'type' => 'array'],
             default => ['key' => $key, 'value' => $value]
         };

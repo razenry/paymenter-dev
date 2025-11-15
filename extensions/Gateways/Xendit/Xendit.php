@@ -34,6 +34,7 @@ class Xendit extends Gateway
                 'type' => 'text',
                 'description' => 'Your Webhook Token key.',
                 'required' => true,
+                'encrypted' => true,
             ],
         ];
     }

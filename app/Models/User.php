@@ -164,7 +164,20 @@ class User extends Authenticatable implements Auditable, FilamentUser, HasAvatar
     public function canAccessPanel(Panel $panel): bool
     {
         if ($panel->getId() === 'admin') {
-            return !is_null($this->role);
+            $roleName = $this->role?->name ?? null;
+
+            if ($roleName === 'admin') {
+                $force2FA = config('settings.force_admin_2fa') ?? false;
+                $has2FA = !empty($this->tfa_secret);
+                if ($force2FA && !$has2FA) {
+                    session()->flash('error', 'You must enable 2FA to access admin panel.');
+                    redirect()->route('account.security')->send(); // Redirect to 2FA setup
+                    return false;
+                }
+
+                return true;
+            }
+
         }
 
         return false;
