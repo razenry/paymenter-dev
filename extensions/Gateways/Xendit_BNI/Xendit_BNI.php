@@ -8,7 +8,7 @@ use Paymenter\Extensions\Gateways\XenditLib\XenditLib;
 
 require_once realpath(__DIR__ . '/../libs/XenditLib.php');
 
-class Xendit_BRI extends Gateway
+class Xendit_BNI extends Gateway
 {
     public function boot(): void
     {
