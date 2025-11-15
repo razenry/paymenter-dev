@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\DB;
 
 class ServiceUpgradeService
 {
+    // TODO: RESET PRODUCT CONFIG EACH PRODUCT UPGRADE.
     /**
      * Handle the uploaded extension file.
      * The added file is always a zip file.
