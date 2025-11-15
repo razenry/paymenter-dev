@@ -6,6 +6,12 @@ use App\Models\Category;
 
 class Home extends Component
 {
+    public function mount()
+    {
+        // Redirect immediately when the component mounts
+        return redirect()->route('register'); // or redirect('/sign-up');
+    }
+
     public function render()
     {
         return view('home', [

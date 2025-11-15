@@ -21,7 +21,7 @@ return [
         'address_placeholder' => 'Your address',
         'address2' => 'Address 2',
         'address2_placeholder' => 'Your address 2',
-        'zip' => 'ZIP',
+        'zip' => 'Postcode (ZIP)',
         'zip_placeholder' => 'Your ZIP code',
         'state' => 'State',
         'state_placeholder' => 'Your state',
