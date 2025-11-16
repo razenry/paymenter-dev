@@ -265,6 +265,32 @@ class Pterodactyl extends Server
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
 
+        // Default values if null
+        $defaults = [
+            'memory' => 0,
+            'swap' => 0,
+            'disk' => 0,
+            'io' => 500,
+            'cpu' => 0,
+            'cpu_pinning' => null,
+            'databases' => 0,
+            'allocations' => 0,
+            'backups' => 0,
+            'split_limit' => 0,
+            'skip_scripts' => false,
+            'oom_killer' => false,
+            'start_on_completion' => false,
+            'dedicated_ip' => false,
+            'location_ids' => [],
+            'port_range' => [],
+        ];
+
+        foreach ($defaults as $key => $value) {
+            if (!isset($settings[$key]) || $settings[$key] === null || empty($settings[$key])) {
+                $settings[$key] = $value;
+            }
+        }
+
         $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
         if (!isset($eggData['attributes'])) {
             throw new Exception('Could not fetch egg data');
@@ -348,7 +374,7 @@ class Pterodactyl extends Server
     private function generateDeploymentData($settings, $environment)
     {
         if (!isset($settings['port_array']) || $settings['port_array'] === '') {
-            if ($settings['node']) {
+            if (!empty($settings['node'])) {
                 // Only get one allocation from the node
                 $nodes = $this->request('/api/application/nodes/deployable', 'get', [
                     'memory' => $settings['memory'],

@@ -22,7 +22,7 @@ class RenewServiceService
                 CreateJob::dispatch($service);
             }
         }
-        $service->status = Service::STATUS_ACTIVE;
+
         $service->expires_at = $service->calculateNextDueDate();
         $service->save();
     }

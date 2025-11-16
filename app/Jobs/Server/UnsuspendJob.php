@@ -31,6 +31,9 @@ class UnsuspendJob implements ShouldQueue
     {
         try {
             $data = ExtensionHelper::unsuspendServer($this->service);
+
+            $this->service->status = Service::STATUS_ACTIVE;
+            $this->service->save();
         } catch (Exception $e) {
             if ($e->getMessage() == 'No server assigned to this product') {
                 return;
