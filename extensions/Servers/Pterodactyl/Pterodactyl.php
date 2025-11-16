@@ -218,9 +218,7 @@ class Pterodactyl extends Server
             [
                 'name' => 'port_range',
                 'label' => 'Port ranges',
-                'type' => 'tags',
-                'description' => '',
-                'database_type' => 'array',
+                'type' => 'text',
                 'required' => false,
                 'disabled' => $using_port_array,
             ],
@@ -325,10 +323,15 @@ class Pterodactyl extends Server
             'start_on_completion' => $settings['start_on_completion'] ?? false,
         ];
         if ($deploymentData['auto_deploy']) {
+            $portRanges = [];
+            if (!empty($settings['port_range']) && is_string($settings['port_range'])) {
+                $portRanges = array_map('trim', explode(',', $settings['port_range']));
+            }
+
             $serverCreationData['deploy'] = [
                 'locations' => (array) $settings['location_ids'],
                 'dedicated_ip' => $settings['dedicated_ip'] ?? false,
-                'port_range' => $settings['port_range'] ?? [],
+                'port_range' => $portRanges,
             ];
         } else {
             $serverCreationData['allocation'] = $deploymentData['allocation'];

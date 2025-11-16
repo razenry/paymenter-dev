@@ -36,6 +36,11 @@
   --color-border-focus: color-mix(in srgb, var(--color-border) 35%, transparent);
   --color-border-ring: color-mix(in srgb, var(--color-border) 40%, transparent);
 }
+
+.fi-select-input .fi-select-input-option span {
+  color: var(--color-neutral)
+}
+
 @layer base {
   *,
   ::after,

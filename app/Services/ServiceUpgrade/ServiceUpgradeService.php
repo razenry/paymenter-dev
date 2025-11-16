@@ -3,7 +3,9 @@
 namespace App\Services\ServiceUpgrade;
 
 use App\Jobs\Server\UpgradeJob;
+use App\Models\ConfigOption;
 use App\Models\ServiceUpgrade;
+use Exception;
 use Illuminate\Support\Facades\DB;
 
 class ServiceUpgradeService
@@ -27,6 +29,8 @@ class ServiceUpgradeService
                 $serviceUpgrade->service->product->increment('stock', $serviceUpgrade->service->quantity);
             }
 
+            $oldServiceConfigs = $service->configs;
+            $isProductUpgrade = $service->product_id != $serviceUpgrade->product_id && $serviceUpgrade->product_id > 0;
             $service->plan_id = $serviceUpgrade->plan_id;
             $service->product_id = $serviceUpgrade->product_id;
             $service->save();
@@ -43,6 +47,42 @@ class ServiceUpgradeService
                     ['config_option_id' => $config->config_option_id],
                     ['config_value_id' => $config->config_value_id]
                 );
+            }
+
+            if ($isProductUpgrade) {
+                $newConfigOptions = $serviceUpgrade->product
+                    ->configOptions();
+                $newConfigOptionIds = $newConfigOptions->pluck('config_option_id')->toArray();
+
+                // Delete configs that do NOT exist on the new product
+                $service->configs()
+                    ->whereNotIn('config_option_id', $newConfigOptionIds)
+                    ->delete();
+
+                // Create/update new configs
+                foreach ($newConfigOptionIds as $optionId) {
+                    $previous = $oldServiceConfigs->where('config_option_id', $optionId)->first();
+
+                    if ($previous) {
+                        // Use old value
+                        $valueId = $previous->config_value_id;
+                        // Save config row
+
+                    } else {
+                        $newPConfig = ConfigOption::where('parent_id', $optionId)->first();
+
+                        if(!$newPConfig) {
+                            throw new Exception("The config from product is not configured yet!");
+                        }
+
+                        $valueId = $newPConfig->id; 
+                    }
+
+                    $service->configs()->updateOrCreate(
+                        ['config_option_id' => $optionId],
+                        ['config_value_id' => $valueId]
+                    );
+                }
             }
 
             $service->refresh();

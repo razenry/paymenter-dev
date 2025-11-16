@@ -48,32 +48,42 @@ class CartItem extends Model
             get: function () {
                 $total = 0;
                 $setup_fee = 0;
+
                 $total += $this->plan->price()->price;
                 $setup_fee += $this->plan->price()->setup_fee;
+
                 $this->product->configOptions->each(function ($option) use (&$total, &$setup_fee) {
                     $selected = (object) collect($this->config_options)->firstWhere('option_id', $option->id);
 
-                    // If checkbox and selected, add price of first child (only one)
+                    // Checkbox option handling
                     if ($option->type === 'checkbox' && $selected?->value) {
-                        $total += $option->children->first()?->price(billing_period: $this->plan->billing_period, billing_unit: $this->plan->billing_unit)->price;
-                        $setup_fee += $option->children->first()?->price(billing_period: $this->plan->billing_period, billing_unit: $this->plan->billing_unit)->setup_fee;
+                        $childPrice = $option->children->first()?->price(
+                            billing_period: $this->plan->billing_period,
+                            billing_unit: $this->plan->billing_unit
+                        );
+
+                        $total += $childPrice?->price ?? 0;
+                        $setup_fee += $childPrice?->setup_fee ?? 0;
 
                         return;
                     }
 
-                    // Skip text, number and checkbox types as they have no price
+                    // Skip types without prices
                     if (in_array($option->type, ['text', 'number', 'checkbox'])) {
-                        $total += 0;
-                        $setup_fee += 0;
-
                         return;
                     }
+
                     if (!$selected || !isset($selected->value)) {
                         return;
                     }
 
-                    $total += $option->children->where('id', $selected?->value)->first()?->price(billing_period: $this->plan->billing_period, billing_unit: $this->plan->billing_unit)->price;
-                    $setup_fee += $option->children->where('id', $selected?->value)->first()?->price(billing_period: $this->plan->billing_period, billing_unit: $this->plan->billing_unit)->setup_fee;
+                    $child = $option->children->where('id', $selected->value)->first()?->price(
+                        billing_period: $this->plan->billing_period,
+                        billing_unit: $this->plan->billing_unit
+                    );
+
+                    $total += $child?->price ?? 0;
+                    $setup_fee += $child?->setup_fee ?? 0;
                 });
 
                 $price = new Price([
@@ -82,32 +92,10 @@ class CartItem extends Model
                     'setup_fee' => $setup_fee,
                 ], apply_exclusive_tax: true);
 
-                if ($this->cart->coupon_id && $this->cart->coupon) {
+                if ($this->isCouponApplicable()) {
                     $coupon = $this->cart->coupon;
                     $user = $this->cart->user;
-                    $applyOnce = $coupon->apply_once_only;
 
-                    // Fetch all product IDs eligible for this coupon
-                    $eligibleProductIds = $coupon->products()->pluck('products.id')->all();
-
-                    // Skip if the current product is not eligible
-                    if (!empty($eligibleProductIds) && !in_array($this->product->id, $eligibleProductIds)) {
-                        return $price;
-                    }
-
-                    // Handle apply-once coupon
-                    if ($applyOnce) {
-                        $eligibleItems = $this->cart->items()
-                            ->get()
-                            ->filter(fn ($item) => empty($eligibleProductIds) || in_array($item->product->id, $eligibleProductIds));
-
-                        $firstEligibleItem = $eligibleItems->first();
-                        if (!$firstEligibleItem || $firstEligibleItem->id !== $this->id) {
-                            return $price;
-                        }
-                    }
-
-                    // Apply discounts
                     $productDiscount = $coupon->calculateDiscount($price->price, $user, $price->currency);
                     $setupDiscount = $coupon->calculateDiscount($price->setup_fee, $user, $price->currency, 'setup_fee');
 
@@ -117,8 +105,38 @@ class CartItem extends Model
                 }
 
                 return $price;
-
             }
         );
+    }
+
+    public function isCouponApplicable(): bool
+    {
+        if (!$this->cart?->coupon_id || !$this->cart?->coupon) {
+            return false;
+        }
+
+        $coupon = $this->cart->coupon;
+
+        // Fetch eligible product IDs
+        $eligibleProductIds = $coupon->products()->pluck('products.id')->all();
+
+        // Current product not eligible
+        if (!empty($eligibleProductIds) && !in_array($this->product->id, $eligibleProductIds)) {
+            return false;
+        }
+
+        // Apply-once logic
+        if ($coupon->apply_once_only) {
+            $eligibleItems = $this->cart->items()
+                ->get()
+                ->filter(fn ($item) => empty($eligibleProductIds) || in_array($item->product->id, $eligibleProductIds));
+
+            $firstEligibleItem = $eligibleItems->first();
+            if (!$firstEligibleItem || $firstEligibleItem->id !== $this->id) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

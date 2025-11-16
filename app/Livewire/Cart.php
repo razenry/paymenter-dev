@@ -178,14 +178,20 @@ class Cart extends Component
 
             // Create the services
             foreach ($cart->items as $item) {
-                // Is it a lifetime coupon, then we can adjust the price of the service
-                if ($this->coupon && (empty($this->coupon->recurring) || $this->coupon->recurring == 1)) {
-                    // Apply coupon only to first billing cycle (use original price for recurring)
-                    $price = $item->price->original_price;
+                // Determine the price to use
+                if ($item->isCouponApplicable()) {
+                    // Lifetime or first-cycle-only coupon logic
+                    if (empty($cart->coupon->recurring) || $cart->coupon->recurring == 1) {
+                        // Apply coupon only to first billing cycle (use original price for recurring)
+                        $price = $item->price->original_price;
+                    } else {
+                        // Apply coupon to all billing cycles (use discounted price)
+                        $price = $item->price->price;
+                    }
                 } else {
-                    // Apply coupon to all billing cycles (use discounted price)
                     $price = $item->price->price;
                 }
+
                 // Create the service
                 $service = $order->services()->create([
                     'user_id' => $user->id,
@@ -194,9 +200,10 @@ class Cart extends Component
                     'plan_id' => $item->plan->id,
                     'price' => $price,
                     'quantity' => $item->quantity,
-                    'coupon_id' => $cart->coupon_id,
+                    'coupon_id' => $item->isCouponApplicable() ? $cart->coupon_id : null,
                 ]);
 
+                // Set checkout properties
                 foreach ($item->checkout_config as $key => $value) {
                     $service->properties()->updateOrCreate([
                         'key' => $key,
@@ -205,14 +212,16 @@ class Cart extends Component
                     ]);
                 }
 
+                // Set config options
                 foreach ($item->config_options as $configOption) {
                     $configOption = (object) $configOption;
+
                     if (in_array($configOption->option_type, ['text', 'number'])) {
                         if (!isset($configOption->value)) {
                             continue;
                         }
                         $service->properties()->updateOrCreate([
-                            'key' => $configOption->option_env_variable ? $configOption->option_env_variable : $configOption->option_name,
+                            'key' => $configOption->option_env_variable ?? $configOption->option_name,
                         ], [
                             'name' => $configOption->option_name,
                             'value' => $configOption->value,
@@ -220,7 +229,8 @@ class Cart extends Component
 
                         continue;
                     }
-                    if (!isset($configOption->value) || $configOption->value === null) {
+
+                    if (!isset($configOption->value)) {
                         continue;
                     }
 
@@ -230,7 +240,7 @@ class Cart extends Component
                     ]);
                 }
 
-                // Create the invoice items
+                // Create invoice items
                 if ($item->price->total > 0) {
                     $invoice->items()->create([
                         'reference_id' => $service->id,
@@ -240,7 +250,7 @@ class Cart extends Component
                         'description' => $service->description,
                     ]);
                 } else {
-                    // We'll make the service active immediately
+                    // Activate free service immediately
                     if ($service->product->server) {
                         CreateJob::dispatch($service);
                     }

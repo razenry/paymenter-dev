@@ -11,9 +11,11 @@ use App\Admin\Resources\ServiceResource\Pages\ListService;
 use App\Admin\Resources\ServiceResource\RelationManagers\ConfigOptionsRelationManager;
 use App\Admin\Resources\ServiceResource\RelationManagers\InvoicesRelationManager;
 use App\Helpers\ExtensionHelper;
+use App\Models\ConfigOption;
 use App\Models\Currency;
 use App\Models\Product;
 use App\Models\Service;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -59,11 +61,72 @@ class ServiceResource extends Resource
             ->components([
                 Select::make('product_id')
                     ->label('Product')
+                    ->afterStateUpdated(function ($state, callable $set, Component $component) {
+                        if (!$state) {
+                            return;
+                        }
+
+                        /** @var Service|null $service */
+                        $service = $component->getRecord();
+
+                        // Only run during edit
+                        if (!$service) {
+                            return;
+                        }
+
+                        $oldProductId = $service->product_id;
+                        $newProductId = $state;
+
+                        $isProductUpgrade = $oldProductId != $newProductId;
+                        if (!$isProductUpgrade) {
+                            return;
+                        }
+
+                        // THIS is the fixed part: use collection not relation
+                        $oldServiceConfigs = $service->configs;
+
+                        // THIS is fixed: load product first
+                        $product = Product::find($newProductId);
+
+                        // This stays EXACTLY your logic
+                        $newConfigOptionIds = $product->configOptions()->pluck('config_option_id')->toArray();
+
+                        // Delete configs not in new product
+                        $service->configs()
+                            ->whereNotIn('config_option_id', $newConfigOptionIds)
+                            ->delete();
+
+                        // Create/update new configs
+                        foreach ($newConfigOptionIds as $optionId) {
+                            $previous = $oldServiceConfigs->where('config_option_id', $optionId)->first();
+
+                            if ($previous) {
+                                // Use old value
+                                $valueId = $previous->config_value_id;
+                            } else {
+                                // Get default config
+                                $newPConfig = ConfigOption::where('parent_id', $optionId)->first();
+
+                                if (!$newPConfig) {
+                                    throw new Exception('The config from product is not configured yet!');
+                                }
+
+                                $valueId = $newPConfig->id;
+                            }
+
+                            // Create or update config row
+                            $service->configs()->updateOrCreate(
+                                ['config_option_id' => $optionId],
+                                ['config_value_id' => $valueId]
+                            );
+                        }
+                    })
                     ->required()
                     ->options(Product::all()->pluck('name', 'id')->toArray())
                     ->searchable()
                     ->live()
                     ->preload()
+
                     ->placeholder('Select the product'),
                 Select::make('plan_id')
                     ->label('Plan')

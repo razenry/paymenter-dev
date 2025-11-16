@@ -110,7 +110,13 @@ class ConfigOptionResource extends Resource
                                             ->maxLength(255)
                                             ->placeholder('Enter the environment variable name'),
                                         // if the type is select, radio or checkbox then allow unlimited children (otherwise only allow 1)
-                                        ProductResource::plan()->columnSpanFull()->label('Pricing')->reorderable(false)->deleteAction(null)->required(false),
+                                        ProductResource::plan()
+                                            ->columnSpanFull()
+                                            ->label('Pricing')
+                                            ->reorderable(false)
+                                            ->deleteAction(null)
+                                            ->required(false) // this makes the field optional
+                                            ->minItems(0),
                                     ]),
                             ]),
                     ]),
