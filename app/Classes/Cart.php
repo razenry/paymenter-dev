@@ -132,7 +132,8 @@ class Cart
      */
     public static function validateCoupon($coupon_code)
     {
-        if (!Auth::check()) {
+        $user = Auth::user();
+        if (!isset($user)) {
             throw new DisplayException('You must be logged in to apply a coupon!');
         }
 
