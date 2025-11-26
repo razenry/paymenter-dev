@@ -15,7 +15,7 @@ class PayPal_IPN extends Gateway
         require __DIR__ . '/routes.php';
     }
 
-        public function getMetadata(): array
+    public function getMetadata(): array
     {
         return [
             'display_name' => 'Paypal IPN',
@@ -24,6 +24,7 @@ class PayPal_IPN extends Gateway
             'website' => 'https://raznar.id',
         ];
     }
+
     /**
      * Get all the configuration for the extension
      *
@@ -78,19 +79,41 @@ class PayPal_IPN extends Gateway
 
     public function notify(Request $request)
     {
-        // Send the request to PayPal
-        $response = Http::asForm()->post($this->config('test_mode') ? 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr' : 'https://ipnpb.paypal.com/cgi-bin/webscr', [
-            'cmd' => '_notify-validate',
-        ] + $request->all());
+        // Get the raw POST body from PayPal
+        $rawBody = $request->getContent();
 
-        // Check if the response is verified
-        if ($response->body() == 'VERIFIED') {
-            ExtensionHelper::addPayment($request->item_number, 'PayPal', $request->mc_gross, $request->mc_fee, transactionId: $request->txn_id);
+        // Prepend PayPal validation command
+        $validationData = 'cmd=_notify-validate&' . $rawBody;
+
+        // Select endpoint
+        $paypalUrl = $this->config('test_mode')
+            ? 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr'
+            : 'https://ipnpb.paypal.com/cgi-bin/webscr';
+
+        // Send raw data to PayPal for verification
+        $response = Http::withHeaders([
+            'Content-Type' => 'application/x-www-form-urlencoded',
+        ])->withBody(
+            $validationData,
+            'application/x-www-form-urlencoded'
+        )->post($paypalUrl);
+
+        \Log::info('IPN Validation Response: ' . $response->body());
+
+        // PayPal VERIFIED?
+        if (trim($response->body()) === 'VERIFIED') {
+            ExtensionHelper::addPayment(
+                $request->item_number,
+                'PayPal',
+                $request->mc_gross,
+                $request->mc_fee,
+                transactionId: $request->txn_id
+            );
 
             return response()->json(['status' => 'success']);
         }
 
-         return response()->json(['status' => 'error']);
+        return response()->json(['status' => 'error']);
     }
 
     public function canUseGateway($total, $currency, $type, $items = [])
