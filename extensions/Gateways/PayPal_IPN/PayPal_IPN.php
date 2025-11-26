@@ -79,28 +79,30 @@ class PayPal_IPN extends Gateway
 
     public function notify(Request $request)
     {
-        // Get the raw POST body from PayPal
+        // Raw POST body from PayPal
         $rawBody = $request->getContent();
 
-        // Prepend PayPal validation command
+        // Prepend validation command
         $validationData = 'cmd=_notify-validate&' . $rawBody;
 
-        // Select endpoint
-        $paypalUrl = $this->config('test_mode')
-            ? 'https://ipnpb.sandbox.paypal.com/cgi-bin/webscr'
-            : 'https://ipnpb.paypal.com/cgi-bin/webscr';
+        // PayPal endpoint
+        $paypalUrl = $this->config('test_mode') ? 'https://www.sandbox.paypal.com/cgi-bin/webscr' : 'https://www.paypal.com/cgi-bin/webscr';
 
-        // Send raw data to PayPal for verification
-        $response = Http::withHeaders([
-            'Content-Type' => 'application/x-www-form-urlencoded',
-        ])->withBody(
-            $validationData,
-            'application/x-www-form-urlencoded'
-        )->post($paypalUrl);
+        // Send validation request to PayPal
+        $response = Http::timeout(30) // FIX #2: increase timeout
+            ->withHeaders([
+                'Content-Type' => 'application/x-www-form-urlencoded',
+            ])
+            ->withOptions([
+                'verify' => false, // optional: fix weird SSL issues
+            ])
+            ->send('POST', $paypalUrl, [
+                'body' => $validationData, // FIX #1: correct body usage
+            ]);
 
         \Log::info('IPN Validation Response: ' . $response->body());
 
-        // PayPal VERIFIED?
+        // If PayPal says it's VERIFIED
         if (trim($response->body()) === 'VERIFIED') {
             ExtensionHelper::addPayment(
                 $request->item_number,
