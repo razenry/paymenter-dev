@@ -76,11 +76,6 @@ class PayPal_IPN extends Gateway
         return $paypal_url . $query;
     }
 
-    /**
-     * Handle the IPN request
-     *
-     * @return void
-     */
     public function notify(Request $request)
     {
         // Send the request to PayPal
@@ -91,12 +86,17 @@ class PayPal_IPN extends Gateway
         // Check if the response is verified
         if ($response->body() == 'VERIFIED') {
             ExtensionHelper::addPayment($request->item_number, 'PayPal', $request->mc_gross, $request->mc_fee, transactionId: $request->txn_id);
+
+            return response()->json(['status' => 'success']);
         }
+
+         return response()->json(['status' => 'error']);
     }
 
     public function canUseGateway($total, $currency, $type, $items = [])
     {
-        $currencies = ["USD", "EUR", "GBP"];
+        $currencies = ['USD', 'EUR', 'GBP'];
+
         return in_array($currency, $currencies);
     }
 }
