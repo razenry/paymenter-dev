@@ -30,6 +30,10 @@ class TerminateJob implements ShouldQueue
      */
     public function handle(): void
     {
+        if ($this->service->disable_termination) {
+            return;
+        }
+
         try {
             $data = ExtensionHelper::terminateServer($this->service);
         } catch (Exception $e) {

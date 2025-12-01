@@ -593,7 +593,12 @@ class ExtensionHelper
 
         self::recordAudit($service, 'extension_action', [], ['action' => 'create_server']);
 
-        return self::getExtension('server', $server->extension, $server->settings)->createServer($service, self::settingsToArray($service->product->settings), self::getServiceProperties($service));
+        $success = self::getExtension('server', $server->extension, $server->settings)->createServer($service, self::settingsToArray($service->product->settings), self::getServiceProperties($service));
+        if ($success) {
+            $service->update(['status' => Service::STATUS_ACTIVE]);
+        }
+
+        return $success;
     }
 
     /**
@@ -629,7 +634,20 @@ class ExtensionHelper
 
         self::recordAudit($service, 'extension_action', [], ['action' => 'terminate_server']);
 
-        return self::getExtension('server', $server->extension, $server->settings)->terminateServer($service, self::settingsToArray($service->product->settings), self::getServiceProperties($service));
+        $success = false;
+        // $success = self::getExtension('server', $server->extension, $server->settings)->terminateServer($service, self::settingsToArray($service->product->settings), self::getServiceProperties($service));
+        // if($success) {
+        //     $service->update(['status' => 'cancelled']);
+        //     // Cancel outstanding invoices
+        //     $service->invoices()->where('status', 'pending')->update(['status' => 'cancelled']);
+
+        //     if ($service->product->stock !== null) {
+        //         $service->product->increment('stock', $service->quantity);
+        //     }
+        // }
+        logger()->info("$service->id is being terminate");
+
+        return $success;
     }
 
     /**

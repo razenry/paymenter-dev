@@ -172,28 +172,19 @@ class CronJob extends Command
                 return $number;
             });
 
-            // NOTE: Termination of services is disabled for now, for safety reasons
-            // $terminateDays = config('settings.cronjob_order_terminate', -1);
-            // if ($terminateDays > 0) {
-            //     $this->runCronJob('services_terminated', function ($number = 0) {
-            //         // Terminate orders if due date is overdue for x days
-            //         Service::where('status', 'suspended')->where('expires_at', '<', now()->subDays((int) config('settings.cronjob_order_terminate', 14)))->each(function ($service) use (&$number) {
-            //             TerminateJob::dispatch($service);
+            $terminateDays = (int) config('settings.cronjob_order_terminate', -1);
+            if ($terminateDays > 0) {
+                $this->runCronJob('services_terminated', function ($number = 0, $terminateDays) {
+                    // Terminate orders if due date is overdue for x days
+                    Service::where('status', 'suspended')->where('expires_at', '<', now()->subDays($terminateDays))->each(function ($service) use (&$number) {
+                        TerminateJob::dispatch($service);
 
-            //             $service->update(['status' => 'cancelled']);
-            //             // Cancel outstanding invoices
-            //             $service->invoices()->where('status', 'pending')->update(['status' => 'cancelled']);
+                        $number++;
+                    });
 
-            //             if ($service->product->stock !== null) {
-            //                 $service->product->increment('stock', $service->quantity);
-            //             }
-
-            //             $number++;
-            //         });
-
-            //         return $number;
-            //     });
-            // }
+                    return $number;
+                });
+            }
 
             $this->runCronJob('tickets_closed', function ($number = 0) {
                 // Close tickets if no response for x days

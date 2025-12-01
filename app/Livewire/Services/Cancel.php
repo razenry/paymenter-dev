@@ -23,6 +23,13 @@ class Cancel extends Component
 
         $this->validate();
 
+        if ($this->service->status === Service::STATUS_PENDING && !$this->service->hasUnpaidInvoices()) {
+            $this->notify('All invoices are paid. This service can no longer be cancelled.', 'error');
+
+            return;
+
+        }
+
         // Event hook will handle the cancellation (if its immediate or end of period)
         ServiceCancellation::create([
             'service_id' => $this->service->id,

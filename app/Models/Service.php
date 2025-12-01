@@ -37,10 +37,12 @@ class Service extends Model implements Auditable
         'user_id',
         'currency_code',
         'billing_agreement_id',
+        'disable_termination',
     ];
 
     protected $casts = [
         'expires_at' => 'date',
+        'disable_termination' => 'boolean',
     ];
 
     /**
@@ -239,5 +241,12 @@ class Service extends Model implements Auditable
     public function billingAgreement()
     {
         return $this->belongsTo(BillingAgreement::class, 'billing_agreement_id');
+    }
+
+    public function hasUnpaidInvoices(): bool
+    {
+        return $this->invoices()
+            ->where('status', '!=', 'paid')
+            ->exists();
     }
 }
