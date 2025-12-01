@@ -4,9 +4,11 @@ namespace App\Admin\Resources\ServiceResource\Pages;
 
 use App\Admin\Actions\AuditAction;
 use App\Admin\Resources\ServiceResource;
+use App\Admin\Resources\ServiceUpgradeResource;
 use App\Helpers\ExtensionHelper;
 use App\Helpers\NotificationHelper;
 use App\Models\Service;
+use App\Models\ServiceUpgrade;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
@@ -50,6 +52,19 @@ class EditService extends EditRecord
                             ->send();
                     }
                     $record->delete();
+                }),
+            Action::make('upgrade')
+                ->label('Upgrade')
+                ->disabled(fn (Service $record) => $record->status !== 'active')
+                ->url(function (Service $record) {
+                    $pendingUpgrade = $record->upgrade()
+                        ->where('status', ServiceUpgrade::STATUS_PENDING)
+                        ->latest()
+                        ->first();
+
+                    return $pendingUpgrade
+                        ? ServiceUpgradeResource::getUrl('edit', ['record' => $pendingUpgrade->id])
+                        : ServiceUpgradeResource::getUrl('create', ['data' => ['service_id' => $record->id]]);
                 }),
             Action::make('changeStatus')
                 ->label('Trigger Extension Action')
@@ -109,7 +124,6 @@ class EditService extends EditRecord
                 })
                 ->color('primary')
                 ->modalSubmitActionLabel('Trigger'),
-
 
             AuditAction::make()->auditChildren([
                 'order',

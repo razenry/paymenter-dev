@@ -109,4 +109,15 @@ class ServiceUpgrade extends Model implements Auditable
             'currency' => $currency ?? $this->service->currency,
         ]);
     }
+
+    protected static function booted()
+    {
+        static::deleting(function (ServiceUpgrade $upgrade) {
+            if ($upgrade->invoice) {
+                $upgrade->invoice->update([
+                    'status' => 'cancelled',
+                ]);
+            }
+        });
+    }
 }

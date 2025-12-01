@@ -46,7 +46,7 @@ class ServiceResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return Service::where('status', 'pending')->count() ?: null;
+        return Service::where('status', 'active')->count() ?: null;
     }
 
     public static function getNavigationBadgeColor(): ?string
@@ -325,6 +325,7 @@ class ServiceResource extends Resource
             })
             ->recordActions([
                 EditAction::make(),
+
             ])
             ->toolbarActions([
                 BulkActionGroup::make([
