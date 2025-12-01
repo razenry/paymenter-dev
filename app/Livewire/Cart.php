@@ -55,8 +55,8 @@ class Cart extends Component
     public function applyCoupon()
     {
         $subTotal = $this->total->subtotal;
-        $user = ClassesCart::get()->user;
-        if (!isset($user)) {
+        $authUser = Auth::user();
+        if (!isset($authUser)) {
             $this->notify('You must be logged in to apply a coupon!', 'error');
             $this->coupon = null;
 

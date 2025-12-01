@@ -7,6 +7,7 @@ use App\Observers\CartItemObserver;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 #[ObservedBy(CartItemObserver::class)]
 class CartItem extends Model
@@ -94,7 +95,7 @@ class CartItem extends Model
 
                 if ($this->isCouponApplicable()) {
                     $coupon = $this->cart->coupon;
-                    $user = $this->cart->user;
+                    $user = Auth::user();
 
                     $productDiscount = $coupon->calculateDiscount($price->price, $user, $price->currency);
                     $setupDiscount = $coupon->calculateDiscount($price->setup_fee, $user, $price->currency, 'setup_fee');

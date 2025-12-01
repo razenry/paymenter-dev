@@ -73,23 +73,34 @@ class Coupon extends Model implements Auditable
         }
 
         if (!in_array($this->applies_to, ['all', $type])) {
+            logger()->info(' err 1');
+
             return 0;
         }
 
         if (!$user instanceof User) {
+            logger()->info(' err 2');
+
             return 0;
         }
 
-        if (!self::isAllowedForRole($user->role->id)) {
+        $userRoleId = $user->role ? $user->role->id : 0;
+        if (!self::isAllowedForRole($userRoleId)) {
+            logger()->info(' err 3');
+
             return 0;
         }
 
         $orderCount = $user->orders()->count();
         if ($this->new_users_only && $orderCount > 0) {
+            logger()->info(' err 4');
+
             return 0;
         }
 
         if ($this->existing_users_only && $orderCount < 1) {
+            logger()->info(' err 5');
+
             return 0;
         }
 
