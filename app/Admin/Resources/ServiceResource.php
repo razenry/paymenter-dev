@@ -23,6 +23,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Component;
@@ -239,6 +240,12 @@ class ServiceResource extends Resource
                             ->label('Cancel Subscription')
                             ->hidden(fn (Component $component) => !$component->getRecord()?->subscription_id),
                     ),
+
+                Toggle::make('disable_termination')
+                    ->label('Disable Termination')
+                    ->default(false)
+                    ->inline(false)
+                    ->reactive(),
             ]);
     }
 

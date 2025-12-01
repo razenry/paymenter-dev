@@ -109,29 +109,7 @@ class EditService extends EditRecord
                 })
                 ->color('primary')
                 ->modalSubmitActionLabel('Trigger'),
-            Action::make('toggleTermination')
-                ->label(fn (Service $record) => $record->disable_termination
-                        ? 'Enable Termination'
-                        : 'Disable Termination'
-                )
-                ->color(fn (Service $record) => $record->disable_termination ? 'success' : 'warning'
-                )
-                ->requiresConfirmation()
-                ->action(function (Service $record) {
-                    $record->update([
-                        'disable_termination' => !$record->disable_termination,
-                    ]);
 
-                    Notification::make()
-                        ->title('Updated Successfully')
-                        ->body(
-                            $record->disable_termination
-                                ? 'Termination has been DISABLED for this service.'
-                                : 'Termination has been ENABLED for this service.'
-                        )
-                        ->success()
-                        ->send();
-                }),
 
             AuditAction::make()->auditChildren([
                 'order',

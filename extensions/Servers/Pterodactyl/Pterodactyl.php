@@ -320,6 +320,10 @@ class Pterodactyl extends Server
             $settings['location_ids'] = [$settings['location']];
         }
 
+        if (isset($settings['location_id'])) {
+            $settings['location_ids'] = [$settings['location_id']];
+        }
+
         $deploymentData = $this->generateDeploymentData($settings, $environment);
 
         $serverCreationData = [
