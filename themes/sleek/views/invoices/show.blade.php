@@ -99,10 +99,10 @@
                         <h3 class="text-sm font-medium text-base/70 uppercase tracking-wide">Payment Options</h3>
                         <div class="bg-background rounded-lg border border-neutral/20 p-4 space-y-4">
                             @if (
-                                $checkPayment ||
-                                    $invoice->transactions->where('status', \App\Enums\InvoiceTransactionStatus::Processing)->where('created_at', '>=', now()->subDay())->count() > 0)
-                                <div
-                                    class="flex items-center gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
+                                    $checkPayment ||
+                                    $invoice->transactions->where('status', \App\Enums\InvoiceTransactionStatus::Processing)->where('created_at', '>=', now()->subDay())->count() > 0
+                                )
+                                <div class="flex items-center gap-3 p-3 rounded-lg bg-warning/10 border border-warning/20">
                                     <x-ri-time-line class="size-5 text-warning" />
                                     <div>
                                         <p class="text-sm font-medium text-warning">Payment Processing</p>
@@ -187,13 +187,29 @@
                                             <tr class="hover:bg-neutral/5 transition-colors">
                                                 <td class="p-3 font-medium">
                                                     @if (in_array($item->reference_type, ['App\Models\Service', 'App\Models\ServiceUpgrade']))
-                                                        <a href="{{ route('services.show', $item->reference_type == 'App\Models\Service' ? $item->reference_id : $item->reference->service_id) }}"
-                                                            class="text-primary hover:text-primary/80 transition-colors">
+                                                        @php
+                                                            // Safely determine the service ID
+                                                            if ($item->reference_type === 'App\Models\Service') {
+                                                                $serviceId = $item->reference_id;
+                                                            } else {
+                                                                // Check if reference exists before accessing service_id
+                                                                $serviceId = $item->reference ? $item->reference->service_id : null;
+                                                            }
+                                                        @endphp
+
+                                                        @if ($serviceId)
+                                                            <a href="{{ route('services.show', $serviceId) }}"
+                                                                class="text-primary hover:text-primary/80 transition-colors">
+                                                                {{ $item->description }}
+                                                            </a>
+                                                        @else
                                                             {{ $item->description }}
-                                                        </a>
+                                                        @endif
                                                     @else
                                                         {{ $item->description }}
                                                     @endif
+
+
                                                 </td>
                                                 <td class="p-3 text-base/70">{{ $item->formattedPrice }}</td>
                                                 <td class="p-3 text-base/70">{{ $item->quantity }}</td>
