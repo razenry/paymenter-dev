@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Session;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
@@ -66,7 +67,7 @@ class SocialLoginController extends Controller
                 return redirect()->route('register')->with('error', __('auth.oauth.account_not_registered'));
             }
 
-            Auth::login($user, true);
+            $this->handleLogin($user, true);
 
             return redirect()->route('home');
         } elseif ($provider == 'google') {
@@ -77,7 +78,7 @@ class SocialLoginController extends Controller
                 return redirect()->route('register')->with('error', __('auth.oauth.account_not_registered'));
             }
 
-            Auth::login($user, true);
+            $this->handleLogin($user, true);
 
             return redirect()->route('home');
         } elseif ($provider == 'github') {
@@ -88,11 +89,29 @@ class SocialLoginController extends Controller
                 return redirect()->route('register')->with('error', __('auth.oauth.account_not_registered'));
             }
 
-            Auth::login($user, true);
+            $this->handleLogin($user, true);
 
             return redirect()->route('home');
         } else {
             return redirect()->route('login');
+        }
+    }
+
+    private function handleLogin(User $user, bool $remember)
+    {
+        Auth::login($user, $remember);
+
+        // Check 2FA
+        if (Auth::user()->tfa_secret) {
+            Session::put('2fa', [
+                'user_id' => Auth::id(),
+                'remember' => false,
+                'expires' => now()->addMinutes(5),
+            ]);
+
+            Auth::logout();
+
+            return redirect()->route('2fa');
         }
     }
 }
