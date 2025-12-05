@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Session;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GithubProvider;
 use Laravel\Socialite\Two\GoogleProvider;
+use Illuminate\Support\Facades\Session;
 use SocialiteProviders\Discord\Provider as DiscordProvider;
 
 class SocialLoginController extends Controller
