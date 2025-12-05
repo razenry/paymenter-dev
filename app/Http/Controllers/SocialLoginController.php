@@ -4,10 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\GithubProvider;
 use Laravel\Socialite\Two\GoogleProvider;
-use Illuminate\Support\Facades\Session;
 use SocialiteProviders\Discord\Provider as DiscordProvider;
 
 class SocialLoginController extends Controller
@@ -67,9 +67,8 @@ class SocialLoginController extends Controller
                 return redirect()->route('register')->with('error', __('auth.oauth.account_not_registered'));
             }
 
-            $this->handleLogin($user, true);
+            return $this->handleLogin($user, true);
 
-            return redirect()->route('home');
         } elseif ($provider == 'google') {
             $oauth_user = $this->google_driver->user();
 
@@ -78,9 +77,8 @@ class SocialLoginController extends Controller
                 return redirect()->route('register')->with('error', __('auth.oauth.account_not_registered'));
             }
 
-            $this->handleLogin($user, true);
+            return $this->handleLogin($user, true);
 
-            return redirect()->route('home');
         } elseif ($provider == 'github') {
             $oauth_user = $this->github_driver->user();
 
@@ -89,9 +87,8 @@ class SocialLoginController extends Controller
                 return redirect()->route('register')->with('error', __('auth.oauth.account_not_registered'));
             }
 
-            $this->handleLogin($user, true);
+            return $this->handleLogin($user, true);
 
-            return redirect()->route('home');
         } else {
             return redirect()->route('login');
         }
@@ -113,5 +110,7 @@ class SocialLoginController extends Controller
 
             return redirect()->route('2fa');
         }
+
+        return redirect()->route('home');
     }
 }
