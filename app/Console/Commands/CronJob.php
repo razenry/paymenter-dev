@@ -174,13 +174,14 @@ class CronJob extends Command
 
             $terminateDays = (int) config('settings.cronjob_order_terminate', -1);
             if ($terminateDays > 0) {
-                $this->runCronJob('services_terminated', function ($number = 0, $terminateDays) {
+                $this->runCronJob('services_terminated', function ($number = 0) use ($terminateDays) {
                     // Terminate orders if due date is overdue for x days
-                    Service::where('status', 'suspended')->where('expires_at', '<', now()->subDays($terminateDays))->each(function ($service) use (&$number) {
-                        TerminateJob::dispatch($service);
-
-                        $number++;
-                    });
+                    Service::where('status', 'suspended')
+                        ->where('expires_at', '<', now()->subDays($terminateDays))
+                        ->each(function ($service) use (&$number) {
+                            TerminateJob::dispatch($service);
+                            $number++;
+                        });
 
                     return $number;
                 });
