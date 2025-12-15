@@ -76,7 +76,10 @@ class ServiceUpgradeResource extends Resource
                         $product = Product::find($newProductId);
 
                         // This stays EXACTLY your logic
-                        $newConfigOptionIds = $product->allConfigOptions()->pluck('config_option_id')->toArray();
+                        $product = Product::with('allConfigOptions')->findOrFail($state);
+                        $newConfigOptionIds = $product->allConfigOptions
+                            ->pluck('id')
+                            ->toArray();
 
                         // Delete configs not in new product
                         $service->configs()

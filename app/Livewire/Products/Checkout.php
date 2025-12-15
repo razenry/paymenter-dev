@@ -74,6 +74,7 @@ class Checkout extends Component
 
                 // Fix: handle when there are no children
                 $defaultChild = $option->children->first();
+
                 return [$option->id => $this->configOptions[$option->id] ?? ($defaultChild ? $defaultChild->id : null)];
             })->toArray();
             foreach ($this->getCheckoutConfig() as $config) {
@@ -224,37 +225,58 @@ class Checkout extends Component
         $this->validate(attributes: $this->attributes());
 
         // Change configOptions so they also contain the name of the option (resulting in less database calls = faster speeds)
-        $configOptions = $this->product->configOptions->map(function ($option) {
-            if ($option->type == 'checkbox') {
-                return (object) [
-                    'option_id' => $option->id,
-                    'option_name' => $option->name,
-                    'option_type' => $option->type,
-                    'option_env_variable' => $option->env_variable,
-                    'value' => isset($this->configOptions[$option->id]) && in_array($this->configOptions[$option->id], [true, 'true'], true) ? $option->children->first()->id : null,
-                    'value_name' => isset($this->configOptions[$option->id]) && in_array($this->configOptions[$option->id], [true, 'true'], true) ? 'Yes' : 'No',
-                ];
-            }
-            if (in_array($option->type, ['text', 'number'])) {
-                return (object) [
-                    'option_id' => $option->id,
-                    'option_name' => $option->name,
-                    'option_type' => $option->type,
-                    'option_env_variable' => $option->env_variable,
-                    'value' => $this->configOptions[$option->id],
-                    'value_name' => $this->configOptions[$option->id],
-                ];
-            }
+        $configOptions = $this->product
+            ->allConfigOptions()
+            ->with('children')
+            ->get()
+            ->map(function ($option) {
 
-            return (object) [
-                'option_id' => $option->id,
-                'option_name' => $option->name,
-                'option_type' => $option->type,
-                'option_env_variable' => $option->env_variable,
-                'value' => $this->configOptions[$option->id],
-                'value_name' => $option->children->where('id', $this->configOptions[$option->id])->first()->name,
-            ];
-        });
+                $inputValue = $this->configOptions[$option->id] ?? null;
+
+                // CHECKBOX
+                if ($option->type === 'checkbox') {
+                    $checked = in_array($inputValue, [true, 'true', 1, '1'], true);
+
+                    return (object) [
+                        'option_id' => $option->id,
+                        'option_name' => $option->name,
+                        'option_type' => $option->type,
+                        'option_env_variable' => $option->env_variable,
+                        'value' => $checked
+                            ? optional($option->children->first())->id
+                            : null,
+                        'value_name' => $checked ? 'Yes' : 'No',
+                    ];
+                }
+
+                // TEXT / NUMBER
+                if (in_array($option->type, ['text', 'number'], true)) {
+                    return (object) [
+                        'option_id' => $option->id,
+                        'option_name' => $option->name,
+                        'option_type' => $option->type,
+                        'option_env_variable' => $option->env_variable,
+                        'value' => $inputValue,
+                        'value_name' => $inputValue,
+                    ];
+                }
+
+                // SELECT / RADIO / ETC
+                $selectedValueId = $inputValue
+                    ?? optional($option->children->first())->id;
+
+                $selectedChild = $option->children
+                    ->firstWhere('id', $selectedValueId);
+
+                return (object) [
+                    'option_id' => $option->id,
+                    'option_name' => $option->name,
+                    'option_type' => $option->type,
+                    'option_env_variable' => $option->env_variable,
+                    'value' => $selectedValueId,
+                    'value_name' => optional($selectedChild)->name,
+                ];
+            });
 
         Cart::add($this->product, $this->plan, $configOptions, $this->checkoutConfig, key: $this->cartProductKey);
 

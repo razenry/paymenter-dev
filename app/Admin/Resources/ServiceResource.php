@@ -88,10 +88,11 @@ class ServiceResource extends Resource
                         $oldServiceConfigs = $service->configs()->get();
 
                         $product = Product::with('allConfigOptions')->findOrFail($state);
-                        $newConfigOptionIds = $product->configOptions
+                        $newConfigOptionIds = $product->allConfigOptions
                             ->pluck('id')
                             ->toArray();
 
+                        logger()->info('id list', $newConfigOptionIds);
                         // Delete configs not in new product
                         $service->configs()
                             ->whereNotIn('config_option_id', $newConfigOptionIds)

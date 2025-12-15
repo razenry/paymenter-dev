@@ -51,7 +51,7 @@ class ServiceUpgradeService
 
             if ($isProductUpgrade) {
                 $newConfigOptions = $serviceUpgrade->product
-                    ->allConfigOptions();
+                    ->allConfigOptions;
                 $newConfigOptionIds = $newConfigOptions->pluck('config_option_id')->toArray();
 
                 // Delete configs that do NOT exist on the new product
@@ -71,11 +71,11 @@ class ServiceUpgradeService
                     } else {
                         $newPConfig = ConfigOption::where('parent_id', $optionId)->first();
 
-                        if(!$newPConfig) {
-                            throw new Exception("The config from product is not configured yet!");
+                        if (!$newPConfig) {
+                            throw new Exception('The config from product is not configured yet!');
                         }
 
-                        $valueId = $newPConfig->id; 
+                        $valueId = $newPConfig->id;
                     }
 
                     $service->configs()->updateOrCreate(
