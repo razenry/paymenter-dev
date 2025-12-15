@@ -51,7 +51,7 @@ class ServiceUpgradeService
 
             if ($isProductUpgrade) {
                 $newConfigOptions = $serviceUpgrade->product
-                    ->configOptions();
+                    ->allConfigOptions();
                 $newConfigOptionIds = $newConfigOptions->pluck('config_option_id')->toArray();
 
                 // Delete configs that do NOT exist on the new product

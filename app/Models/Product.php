@@ -39,6 +39,20 @@ class Product extends Model implements Auditable
         return $this->hasManyThrough(ConfigOption::class, ConfigOptionProduct::class, 'product_id', 'id', 'id', 'config_option_id')->where('config_options.hidden', false)->orderBy('config_options.sort', 'asc')->orderBy('config_options.id', 'desc');
     }
 
+    public function allConfigOptions(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            ConfigOption::class,
+            ConfigOptionProduct::class,
+            'product_id',
+            'id',
+            'id',
+            'config_option_id'
+        )
+            ->orderBy('config_options.sort', 'asc')
+            ->orderBy('config_options.id', 'desc');
+    }
+
     /**
      * Get the extension of the product.
      */

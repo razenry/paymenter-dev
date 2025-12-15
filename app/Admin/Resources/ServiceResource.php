@@ -84,13 +84,13 @@ class ServiceResource extends Resource
                         }
 
                         // THIS is the fixed part: use collection not relation
-                        $oldServiceConfigs = $service->configs;
+                        // ALWAYS reload from DB
+                        $oldServiceConfigs = $service->configs()->get();
 
-                        // THIS is fixed: load product first
-                        $product = Product::find($newProductId);
-
-                        // This stays EXACTLY your logic
-                        $newConfigOptionIds = $product->configOptions()->pluck('config_option_id')->toArray();
+                        $product = Product::with('allConfigOptions')->findOrFail($state);
+                        $newConfigOptionIds = $product->configOptions
+                            ->pluck('id')
+                            ->toArray();
 
                         // Delete configs not in new product
                         $service->configs()
