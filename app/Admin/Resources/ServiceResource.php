@@ -92,7 +92,7 @@ class ServiceResource extends Resource
                             ->pluck('id')
                             ->toArray();
 
-                        logger()->info('id list', $newConfigOptionIds);
+   
                         // Delete configs not in new product
                         $service->configs()
                             ->whereNotIn('config_option_id', $newConfigOptionIds)
