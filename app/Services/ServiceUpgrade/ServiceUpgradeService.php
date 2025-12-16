@@ -14,8 +14,8 @@ class ServiceUpgradeService
     /**
      * Handle the uploaded extension file / perform the service upgrade.
      *
-     * @param ServiceUpgrade $serviceUpgrade
      * @return void
+     *
      * @throws Exception
      */
     public function handle(ServiceUpgrade $serviceUpgrade)
@@ -86,6 +86,11 @@ class ServiceUpgradeService
     {
         // Update or create new configs from upgrade
         foreach ($serviceUpgrade->configs as $config) {
+            if (!$config->config_option_id) {
+                // Skip configs with null ID
+                continue;
+            }
+
             $service->configs()->updateOrCreate(
                 ['config_option_id' => $config->config_option_id],
                 ['config_value_id' => $config->config_value_id]
@@ -98,7 +103,7 @@ class ServiceUpgradeService
 
         // Handle product-specific config changes
         $product = Product::with('allConfigOptions')->findOrFail($serviceUpgrade->product->id);
-        $newConfigOptionIds = $product->allConfigOptions->pluck('config_option_id')->toArray();
+        $newConfigOptionIds = $product->allConfigOptions->pluck('config_option_id')->filter()->toArray();
 
         // Remove configs not present in the new product
         $service->configs()->whereNotIn('config_option_id', $newConfigOptionIds)->delete();
@@ -111,12 +116,12 @@ class ServiceUpgradeService
                 $valueId = $previous->config_value_id;
             } else {
                 $newPConfig = ConfigOption::where('parent_id', $optionId)->first();
-
-                if (!$newPConfig) {
-                    throw new Exception('The config from product is not configured yet!');
+                if ($newPConfig) {
+                    $valueId = $newPConfig->id;
+                } else {
+                    // Skip missing config instead of crashing
+                    continue;
                 }
-
-                $valueId = $newPConfig->id;
             }
 
             $service->configs()->updateOrCreate(
