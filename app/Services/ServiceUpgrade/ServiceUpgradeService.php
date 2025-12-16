@@ -98,8 +98,7 @@ class ServiceUpgradeService
 
         // Handle product-specific config changes
         $product = Product::with('allConfigOptions')->findOrFail($serviceUpgrade->product->id);
-        $newConfigOptions = $product->allConfigOptions;
-        $newConfigOptionIds = $newConfigOptions->pluck('config_option_id')->toArray();
+        $newConfigOptionIds = $product->allConfigOptions->pluck('config_option_id')->toArray();
 
         // Remove configs not present in the new product
         $service->configs()->whereNotIn('config_option_id', $newConfigOptionIds)->delete();
