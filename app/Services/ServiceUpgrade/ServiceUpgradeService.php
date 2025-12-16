@@ -22,8 +22,7 @@ class ServiceUpgradeService
     {
         DB::transaction(function () use ($serviceUpgrade) {
             $service = $serviceUpgrade->service;
-            $oldServiceConfigs = $service->configs;
-
+            
             // Update status
             $serviceUpgrade->status = ServiceUpgrade::STATUS_COMPLETED;
             $serviceUpgrade->save();
@@ -35,7 +34,7 @@ class ServiceUpgradeService
             $isProductUpgrade = $this->applyUpgrade($service, $serviceUpgrade);
 
             // Update configs
-            $this->updateConfigs($service, $serviceUpgrade, $oldServiceConfigs, $isProductUpgrade);
+            $this->updateConfigs($service, $serviceUpgrade, $isProductUpgrade);
 
             // Recalculate price
             $service->price = $service->calculatePrice();
@@ -82,13 +81,12 @@ class ServiceUpgradeService
     /**
      * Update the service configs.
      */
-    private function updateConfigs($service, ServiceUpgrade $serviceUpgrade, $oldConfigs, bool $isProductUpgrade): void
+    private function updateConfigs($service, ServiceUpgrade $serviceUpgrade, bool $isProductUpgrade): void
     {
-        // Update or create new configs from upgrade
+        // Update or create new configs from upgrade (extension configs)
         foreach ($serviceUpgrade->configs as $config) {
             if (!$config->config_option_id) {
-                // Skip configs with null ID
-                continue;
+                continue; // Skip null config_option_id
             }
 
             $service->configs()->updateOrCreate(
@@ -101,27 +99,29 @@ class ServiceUpgradeService
             return;
         }
 
-        // Handle product-specific config changes
-        $product = Product::with('allConfigOptions')->findOrFail($serviceUpgrade->product->id);
-        $newConfigOptionIds = $product->allConfigOptions->pluck('config_option_id')->filter()->toArray();
+        // Reload old service configs from DB as a collection
+        $oldServiceConfigs = $service->configs()->get();
 
-        // Remove configs not present in the new product
+        // Get new product configs
+        $product = Product::with('allConfigOptions')->findOrFail($serviceUpgrade->product->id);
+        $newConfigOptionIds = $product->allConfigOptions->pluck('id')->toArray();
+
+        // Delete configs not in the new product
         $service->configs()->whereNotIn('config_option_id', $newConfigOptionIds)->delete();
 
-        // Add or retain old values for new product configs
+        // Create/update configs for the new product
         foreach ($newConfigOptionIds as $optionId) {
-            $previous = $oldConfigs->where('config_option_id', $optionId)->first();
+            $previous = $oldServiceConfigs->where('config_option_id', $optionId)->first();
 
             if ($previous) {
                 $valueId = $previous->config_value_id;
             } else {
+                // Get default config for the option
                 $newPConfig = ConfigOption::where('parent_id', $optionId)->first();
-                if ($newPConfig) {
-                    $valueId = $newPConfig->id;
-                } else {
-                    // Skip missing config instead of crashing
-                    continue;
+                if (!$newPConfig) {
+                    throw new Exception("The config for option_id {$optionId} is not configured yet!");
                 }
+                $valueId = $newPConfig->id;
             }
 
             $service->configs()->updateOrCreate(
