@@ -3,6 +3,7 @@
 namespace Paymenter\Extensions\Servers\Pterodactyl;
 
 use App\Classes\Extension\Server;
+use App\Exceptions\DisplayException;
 use App\Models\Service;
 use Exception;
 use Illuminate\Support\Facades\Http;
@@ -257,6 +258,32 @@ class Pterodactyl extends Server
         ];
     }
 
+    private function getOrCreateUser($orderUser): int
+    {
+        // Try to fetch an existing user by email
+        $response = $this->request('/api/application/users', 'get', [
+            'filter' => ['email' => $orderUser->email],
+        ]);
+
+        if (!empty($response['data'][0]['attributes']['id'])) {
+            return (int) $response['data'][0]['attributes']['id'];
+        }
+
+        // If user doesn't exist, create a new one
+        $username = preg_replace('/[^a-zA-Z0-9]/', '', strtolower(Str::transliterate($orderUser->name)))
+            ?? Str::random(8);
+        $username .= '_' . Str::random(4);
+
+        $newUser = $this->request('/api/application/users', 'post', [
+            'email' => $orderUser->email,
+            'username' => $username,
+            'first_name' => $orderUser->first_name ?? '',
+            'last_name' => $orderUser->last_name ?? '',
+        ]);
+
+        return (int) $newUser['attributes']['id'];
+    }
+
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
@@ -301,20 +328,7 @@ class Pterodactyl extends Server
         }
 
         $orderUser = $service->user;
-        // Get the user id if one already exists...
-        $user = $this->request('/api/application/users', 'get', ['filter' => ['email' => $orderUser->email]])['data'][0]['attributes']['id'] ?? null;
-
-        // Otherwise create a new user
-        if (!$user) {
-            $user = $this->request('/api/application/users', 'post', [
-                'email' => $orderUser->email,
-                'username' => (preg_replace('/[^a-zA-Z0-9]/', '', strtolower(Str::transliterate($orderUser->name))) ?? Str::random(8)) . '_' . Str::random(4),
-                'first_name' => $orderUser->first_name ?? '',
-                'last_name' => $orderUser->last_name ?? '',
-            ])['attributes']['id'];
-
-            $returnData['created_user'] = true;
-        }
+        $user = $this->getOrCreateUser($orderUser);
 
         if (isset($settings['location'])) {
             $settings['location_ids'] = [$settings['location']];
@@ -704,17 +718,42 @@ class Pterodactyl extends Server
         return true;
     }
 
-    public function getActions(Service $service)
+    public function getActions(Service $service): array
     {
-        $server = $this->getServer($service->id, raw: true);
+        $orderUser = $service->user;
+        $isVerified = $orderUser->hasVerifiedEmail();
 
         return [
             [
                 'type' => 'button',
-                'label' => 'Go to server',
-                'url' => $this->config('host') . '/server/' . $server['attributes']['identifier'],
+                'label' => 'Go to Server',
+                'function' => 'ssoLink',
+                'disabled' => !$isVerified,
+                'tooltip' => $isVerified ? null : 'You must verify your email to access the panel',
             ],
         ];
+    }
+
+    public function ssoLink(Service $service): string
+    {
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        if (empty($userAgent)) {
+            throw new DisplayException('User agent cannot be empty.');
+        }
+
+        $orderUser = $service->user;
+        if (!$orderUser->hasVerifiedEmail()) {
+            return route('verification.notice');
+        }
+
+        $userId = $this->getOrCreateUser($orderUser);
+        $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
+            'user_agent' => $userAgent,
+        ]);
+
+        return rtrim($this->config('host'), '/') .
+            sprintf('/auth/login/sso?token_id=%s&token=%s', $data['token_id'], $data['token']);
     }
 
     public function migrateOption(string $key, ?string $value)

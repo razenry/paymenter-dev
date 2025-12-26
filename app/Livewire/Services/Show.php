@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Services;
 
+use App\Exceptions\DisplayException;
 use App\Helpers\ExtensionHelper;
 use App\Livewire\Component;
 use App\Models\Service;
@@ -106,12 +107,25 @@ class Show extends Component
 
             return;
         }
-        $result = ExtensionHelper::callService($this->service, $function);
-        // If its a response, return it
-        if (!is_string($result)) {
+
+        try {
+            $result = ExtensionHelper::callService($this->service, $function);
+
+            // If it returns a URL, redirect
+            if (is_string($result)) {
+                $this->redirect($result);
+            }
+
+            // Otherwise, return the result (could be JSON or array)
             return $result;
+
+        } catch (DisplayException $e) {
+            // Show the error message to the user
+            $this->notify($e->getMessage(), 'error');
+        } catch (Exception $e) {
+            // Fallback for unexpected errors
+            $this->notify('Something went wrong. Please try again.', 'error');
         }
-        $this->redirect($result);
     }
 
     public function render()
