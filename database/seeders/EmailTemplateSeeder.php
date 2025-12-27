@@ -261,7 +261,7 @@ class EmailTemplateSeeder extends Seeder
                         Verify email
                     </a>
                 </div>
-                This link will expire in {{ Invoice Reminder }} minutes.
+                This link will expire in {{ $expire_time }} minutes.
                 If you did not create an account, you can ignore this email.
                 HTML,
             'mail_enabled' => 'force',
