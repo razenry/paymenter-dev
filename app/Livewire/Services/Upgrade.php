@@ -144,6 +144,17 @@ class Upgrade extends Component
             return $this->redirect(route('services.show', $this->service), true);
         }
 
+        // Check for unpaid invoices
+        $unpaidInvoices = $this->service->user->invoices()
+            ->where('status', 'pending')
+            ->exists();
+
+        if ($unpaidInvoices) {
+            $this->notify('You have unpaid invoices. Please pay them before upgrading.', 'error', true);
+
+            return $this->redirect(route('services.show', $this->service), true);
+        }
+
         $this->validate();
 
         $upgradePlan = $this->upgradeProduct->availablePlans()->where('billing_period', $this->service->plan->billing_period)->where('billing_unit', $this->service->plan->billing_unit)->first();

@@ -77,9 +77,11 @@
                     </a>
                     @endif
                     @if($service->upgrade()->where('status', 'pending')->exists())
-                    <x-button.primary class="h-fit !w-fit"
-                        @click="Alpine.store('notifications').addNotification([{message: '{{ __('services.upgrade_pending') }}', type: 'error'}])">
-                        <span>{{ __('services.upgrade') }}</span>
+                    <x-button.primary class="h-fit !w-fit" wire:click="$set('showCancelUpgrade', true)">
+                        <span wire:loading.remove wire:target="$set('showCancelUpgrade', true)">
+                            {{ __('services.cancel_upgrade') }}
+                        </span>
+                        <x-loading target="$set('showCancelUpgrade', true)" />
                     </x-button.primary>
                     @endif
                     @if($service->cancellable)
@@ -103,6 +105,21 @@
                             </div>
                         </x-slot>
                     </x-modal>
+                    @endif
+                    @if($showCancelUpgrade)
+                        <x-modal open="true"
+                            title="{{ __('services.cancel_upgrade', ['service' => $service->product->name]) }}"
+                            width="max-w-3xl">
+                            <livewire:services.cancel-upgrade :service="$service" />
+                            <x-slot name="closeTrigger">
+                                <div class="flex gap-4">
+                                    <button wire:click="$set('showCancelUpgrade', false)" @click="open = false"
+                                        class="text-primary-100">
+                                        <x-ri-close-fill class="size-6" />
+                                    </button>
+                                </div>
+                            </x-slot>
+                        </x-modal>
                     @endif
                 </div>
                 <div class="mt-2 flex flex-row gap-2 flex-wrap">

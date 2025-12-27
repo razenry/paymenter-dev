@@ -14,7 +14,7 @@ class Index extends Component
 
     public function render()
     {
-        $query = Auth::user()->services()->orderBy('created_at', 'desc');
+        $query = Auth::user()->services()->orderByRaw("CASE WHEN status = 'active' THEN 1 ELSE 2 END")->orderBy('created_at', 'desc');
 
         if ($this->status) {
             $query->where('status', $this->status);

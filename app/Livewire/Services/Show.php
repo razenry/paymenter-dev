@@ -29,6 +29,7 @@ class Show extends Component
 
     #[Url('cancel', except: false)]
     public bool $showCancel = false;
+    public bool $showCancelUpgrade = false;
 
     public bool $showBillingAgreement = false;
 
