@@ -15,6 +15,7 @@ use App\Models\TicketMessage;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail as FacadesMail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -253,13 +254,14 @@ class NotificationHelper
             return;
         }
 
+        $expireTime = Config::get('auth.verification.expire', 15);
         // Mark as sent for 15 minutes
-        Cache::put($cacheKey, true, now()->addMinutes(15));
+        Cache::put($cacheKey, true, $expireTime);
 
         $data['user'] = $user;
         $data['url'] = URL::temporarySignedRoute(
             'verification.verify',
-            now()->addMinutes(15),
+            now()->addMinutes($expireTime),
             [
                 'id' => $user->getKey(),
                 'hash' => sha1($user->email),
