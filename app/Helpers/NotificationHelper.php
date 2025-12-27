@@ -268,6 +268,8 @@ class NotificationHelper
             ]
         );
 
+        $data['expire_time'] = $expireTime;
+
         self::sendNotification('email_verification', $data, $user);
     }
 
