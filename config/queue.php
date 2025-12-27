@@ -80,4 +80,10 @@ return [
         'table' => 'failed_jobs',
     ],
 
+    'rate_limiter' => [
+        'invoice-reminders' => [
+            'max_jobs' => 5,    // max 5 emails per minute
+            'decay_minutes' => 1,
+        ],
+    ],
 ];

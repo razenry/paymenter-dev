@@ -34,18 +34,22 @@ class TerminateJob implements ShouldQueue
             return;
         }
 
+        $data = []; // ensure it's always an array
+
         try {
-            $data = ExtensionHelper::terminateServer($this->service);
+            $result = ExtensionHelper::terminateServer($this->service);
+            if (is_array($result)) {
+                $data = $result;
+            }
         } catch (Exception $e) {
-            if ($e->getMessage() == 'No server assigned to this product') {
-                // return;
-            } else {
+            if ($e->getMessage() !== 'No server assigned to this product') {
                 throw $e;
             }
+            // else leave $data as empty array
         }
 
         if ($this->sendNotification) {
-            NotificationHelper::serverTerminatedNotification($this->service->user, $this->service, is_array($data) ? $data : []);
+            NotificationHelper::serverTerminatedNotification($this->service->user, $this->service, $data);
         }
     }
 }

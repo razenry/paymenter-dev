@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Helpers\ExtensionHelper;
 use App\Helpers\NotificationHelper;
+use App\Jobs\Invoice\SendInvoiceReminderJob;
 use App\Jobs\Server\SuspendJob;
 use App\Jobs\Server\TerminateJob;
 use App\Models\CronStat;
@@ -46,6 +47,31 @@ class CronJob extends Command
         DB::beginTransaction();
 
         try {
+            $this->runCronJob('invoice_reminder', function ($number = 0) {
+                $reminderDays = (int) config('settings.cronjob_invoice_reminder', 3);
+
+                Invoice::where('status', 'pending')
+                    ->where('due_at', '>', now()->toDateString()) // compare only date part
+                    ->where('due_at', '<', now()->addDays($reminderDays)->toDateString()) // reminder window
+                    ->get()
+                    ->each(function ($invoice) use (&$number) {
+
+                        logger()->debug('Processing invoice reminder', [
+                            'invoice_id' => $invoice->id,
+                            'invoice_number' => $invoice->number,
+                            'due_at' => $invoice->due_at,
+                            'user_id' => $invoice->user_id,
+                        ]);
+
+                        SendInvoiceReminderJob::dispatch($invoice);
+                        $number++;
+                    });
+
+                logger()->debug('Invoice reminder cron completed', ['total_reminded' => $number]);
+
+                return $number;
+            });
+
             // Send invoices if due date is x days away
             $this->runCronJob('invoices_created', function ($number = 0) {
                 Service::where('status', 'active')->where('expires_at', '<', now()->addDays((int) config('settings.cronjob_invoice', 7)))->get()->each(function ($service) use (&$number) {

@@ -55,4 +55,10 @@ class InvoiceObserver
     {
         event(new InvoiceEvent\Deleted($invoice));
     }
+
+    public function remind(Invoice $invoice): void
+    {
+        logger()->debug('InvoiceObserver::remind called', ['invoice_id' => $invoice->id]);
+        event(new InvoiceEvent\Remind($invoice));
+    }
 }

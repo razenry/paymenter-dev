@@ -16,6 +16,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Mail as FacadesMail;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
 use Illuminate\View\Compilers\BladeCompiler;
 
@@ -133,23 +134,48 @@ class NotificationHelper
 
     public static function invoiceNotification(User $user, Invoice $invoice, $key = 'new_invoice_created'): void
     {
+        logger()->debug('invoiceNotification started', ['invoice_id' => $invoice->id, 'user_id' => $user->id]);
+
         $data = [
             'invoice' => $invoice,
             'items' => $invoice->items,
             'total' => $invoice->formattedTotal,
             'has_subscription' => $invoice->items->filter(fn ($item) => $item->reference_type === Service::class && $item->reference->subscription_id)->isNotEmpty(),
+            'due_at_formatted' => $invoice->due_at ? Carbon::parse($invoice->due_at)->format('F j, Y') : 'Not set',
         ];
 
-        // Generate the invoice PDF
+        logger()->debug('Generating PDF for invoice', ['invoice_id' => $invoice->id]);
         $pdf = PDF::generateInvoice($invoice);
+
         // Generate path
-        if (!file_exists(storage_path('app/invoices'))) {
-            // Create the directory if it doesn't exist
-            mkdir(storage_path('app/invoices'), 0755, true);
+        $invoiceDir = storage_path('app/invoices');
+        if (!file_exists($invoiceDir)) {
+            logger()->debug('Invoices directory does not exist, creating...', ['dir' => $invoiceDir]);
+            mkdir($invoiceDir, 0755, true);
         }
-        // Save the PDF to a temporary location
+
+        // Make sure it's writable
+        if (!is_writable($invoiceDir)) {
+            logger()->warning('Invoices directory is not writable, changing permissions...', ['dir' => $invoiceDir]);
+            chmod($invoiceDir, 0775);
+        }
+
+        // Save the PDF
         $pdfPath = storage_path('app/invoices/' . ($invoice->number ?? $invoice->id) . '.pdf');
-        $pdf->save($pdfPath);
+        logger()->debug('Saving PDF', ['pdf_path' => $pdfPath]);
+        $pdfContent = $pdf->output(); // Get raw PDF bytes
+
+        try {
+            Storage::put('invoices/' . ($invoice->number ?? $invoice->id) . '.pdf', $pdfContent);
+            logger()->debug('PDF saved successfully', ['pdf_path' => $pdfPath, 'size' => strlen($pdfContent)]);
+        } catch (\Exception $e) {
+            logger()->error('Failed to save PDF', [
+                'pdf_path' => $pdfPath,
+                'error' => $e->getMessage(),
+            ]);
+
+            return;
+        }
 
         // Attach the PDF to the email
         $attachments = [
@@ -159,7 +185,9 @@ class NotificationHelper
             ],
         ];
 
+        logger()->debug('Sending notification', ['key' => $key, 'user_id' => $user->id]);
         self::sendNotification($key, $data, $user, $attachments);
+        logger()->debug('invoiceNotification finished', ['invoice_id' => $invoice->id]);
     }
 
     public static function invoiceCreatedNotification(User $user, Invoice $invoice): void
@@ -170,6 +198,11 @@ class NotificationHelper
     public static function invoicePaidNotification(User $user, Invoice $invoice): void
     {
         self::invoiceNotification($user, $invoice, 'invoice_paid');
+    }
+
+    public static function invoiceRemindNotification(User $user, Invoice $invoice): void
+    {
+        self::invoiceNotification($user, $invoice, 'invoice_reminder');
     }
 
     public static function invoicePaymentFailedNotification(User $user, Invoice $invoice): void

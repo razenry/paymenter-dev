@@ -47,10 +47,12 @@ class Xendit_QRIS extends Gateway
     {
         if ($currency != 'IDR') {
             return false;
-        } if ($total < 5000) {
+        } 
+        
+        if ($total < 1) {
             return false;
         }
 
-     return true;
+        return true;
     }
 }

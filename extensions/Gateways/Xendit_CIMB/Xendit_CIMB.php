@@ -47,7 +47,9 @@ class Xendit_CIMB extends Gateway
     {
         if ($currency != 'IDR') {
             return false;
-        } if ($total < 5000) {
+        } 
+        
+        if ($total < 10000) {
             return false;
         }
 

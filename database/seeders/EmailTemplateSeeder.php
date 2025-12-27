@@ -92,6 +92,32 @@ class EmailTemplateSeeder extends Seeder
             'edit_preference_message' => 'Notify me about successful payments',
             'in_app_url' => '{{ route("invoices.show", $invoice) }}',
         ],
+        'invoice_reminder' => [
+            'subject' => 'Invoice Reminder',
+            'body' => <<<'HTML'
+                # Invoice Reminder
+
+                This is a friendly reminder that your invoice is due soon.
+
+                Total amount due: **{{ $invoice->formattedTotal }}**  
+                Due date: **{{ $due_at_formatted }}**
+
+                Please ensure your payment is made by the due date to avoid any interruption of your service.
+
+                <div class="action">
+                    <a class="button button-blue" href="{{ route('invoices.show', $invoice) }}">
+                        View Invoice
+                    </a>
+                </div>
+                HTML,
+            'in_app_title' => 'Invoice Reminder',
+            'in_app_body' => 'Your invoice #{{ $invoice->id }} is due on {{ $due_at_formatted }} with total amount: {{ $invoice->formattedTotal }}. Please pay to avoid service interruption.',
+            'mail_enabled' => 'choice_on',
+            'in_app_enabled' => 'choice_on',
+            'edit_preference_message' => 'Notify me about upcoming invoice due dates',
+            'in_app_url' => '{{ route("invoices.show", $invoice) }}',
+        ],
+
         'invoice_payment_failed' => [
             'subject' => 'Invoice payment failed',
             'body' => <<<'HTML'
