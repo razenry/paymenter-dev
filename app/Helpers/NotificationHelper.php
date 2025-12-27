@@ -14,7 +14,7 @@ use App\Models\ServiceCancellation;
 use App\Models\TicketMessage;
 use App\Models\User;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Mail as FacadesMail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\URL;
@@ -246,15 +246,26 @@ class NotificationHelper
 
     public static function emailVerificationNotification(User $user, array $data = []): void
     {
+        $cacheKey = 'email_verification_sent:' . $user->id;
+
+        // Block resend if still within cooldown (15 minutes)
+        if (Cache::has($cacheKey)) {
+            return;
+        }
+
+        // Mark as sent for 15 minutes
+        Cache::put($cacheKey, true, now()->addMinutes(15));
+
         $data['user'] = $user;
         $data['url'] = URL::temporarySignedRoute(
             'verification.verify',
-            Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
+            now()->addMinutes(15),
             [
                 'id' => $user->getKey(),
                 'hash' => sha1($user->email),
             ]
         );
+
         self::sendNotification('email_verification', $data, $user);
     }
 
