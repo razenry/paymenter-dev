@@ -48,7 +48,7 @@ class ProvisionPendingServices extends Command
                     return;
                 }
 
-                
+
                 try {
                     ExtensionHelper::createServer($service);
                     $count++;
@@ -58,6 +58,9 @@ class ProvisionPendingServices extends Command
                         // Skip logging for already provisioned services
                         $count++;
 
+                        Log::warning('Service already provisioned, skipping.', [
+                            'service_id' => $service->id,
+                        ]);
                         return;
                     }
 
