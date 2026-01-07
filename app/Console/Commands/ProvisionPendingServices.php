@@ -44,10 +44,23 @@ class ProvisionPendingServices extends Command
 
             ->get()
             ->each(function (Service $service) use (&$count) {
+                if (!isset($service->product->server)) {
+                    return;
+                }
+
+                
                 try {
                     ExtensionHelper::createServer($service);
                     $count++;
                 } catch (\Throwable $e) {
+                    $msg = strtolower($e->getMessage());
+                    if (str_contains($msg, 'already provisioned') || str_contains($msg, 'already exists')) {
+                        // Skip logging for already provisioned services
+                        $count++;
+
+                        return;
+                    }
+
                     Log::error('Service provisioning failed', [
                         'service_id' => $service->id,
                         'error' => $e->getMessage(),
