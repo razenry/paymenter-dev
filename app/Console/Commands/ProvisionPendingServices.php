@@ -61,6 +61,9 @@ class ProvisionPendingServices extends Command
                         Log::warning('Service already provisioned, skipping.', [
                             'service_id' => $service->id,
                         ]);
+
+                        $service->status = Service::STATUS_ACTIVE;
+                        $service->save();
                         return;
                     }
 
