@@ -31,6 +31,14 @@ class Cart extends Component
 
     public function mount()
     {
+        // Ensure cart currency matches session currency if cart is empty
+        $cart = ClassesCart::get();
+        $sessionCurrency = session('currency', config('settings.default_currency'));
+        if ($cart->exists && $cart->currency_code !== $sessionCurrency && $cart->items()->count() === 0) {
+            $cart->currency_code = $sessionCurrency;
+            $cart->save();
+        }
+
         if (ClassesCart::get()->coupon_id) {
             $this->coupon = ClassesCart::get()->coupon;
         }
@@ -45,7 +53,11 @@ class Cart extends Component
             return;
         }
 
-        $this->total = new Price(['price' => ClassesCart::items()->sum(fn ($item) => $item->price->total * $item->quantity), 'currency' => ClassesCart::get()->currency]);
+        // Sum the pre-tax subtotals of all items
+        $preTaxTotal = ClassesCart::items()->sum(fn ($item) => $item->price->subtotal * $item->quantity);
+        // Use session currency for consistency
+        $currency = \App\Models\Currency::find(session('currency', config('settings.default_currency')));
+        $this->total = new Price(['price' => $preTaxTotal, 'currency' => $currency]);
         $this->gateways = ExtensionHelper::getCheckoutGateways($this->total->total, $this->total->currency->code, 'cart', ClassesCart::items());
         if (count($this->gateways) > 0 && !array_search($this->gateway, array_column($this->gateways, 'id')) !== false) {
             $this->gateway = $this->gateways[0]->id;
