@@ -51,8 +51,9 @@ class Cart
             $cart->save();
             Cookie::queue('cart', $cart->ulid, 60 * 24 * 30); // 30 days
             $cart = \App\Models\Cart::find($cart->id);
-        } elseif ($cart->currency_code !== $currentCurrency && $cart->items()->count() === 0) {
-            // Update currency if cart is empty and session currency changed
+        } elseif ($cart->currency_code !== $currentCurrency) {
+            // Update currency if session currency changed
+            // This ensures cart always matches session currency
             $cart->currency_code = $currentCurrency;
             $cart->save();
         }

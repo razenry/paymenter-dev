@@ -31,14 +31,6 @@ class Cart extends Component
 
     public function mount()
     {
-        // Ensure cart currency matches session currency if cart is empty
-        $cart = ClassesCart::get();
-        $sessionCurrency = session('currency', config('settings.default_currency'));
-        if ($cart->exists && $cart->currency_code !== $sessionCurrency && $cart->items()->count() === 0) {
-            $cart->currency_code = $sessionCurrency;
-            $cart->save();
-        }
-
         if (ClassesCart::get()->coupon_id) {
             $this->coupon = ClassesCart::get()->coupon;
         }
@@ -174,7 +166,7 @@ class Cart extends Component
             // Create the order
             $order = new Order([
                 'user_id' => $user->id,
-                'currency_code' => $cart->currency_code,
+                'currency_code' => $cart->currency_code ?: session('currency', config('settings.default_currency')),
             ]);
             $order->save();
 
@@ -183,7 +175,7 @@ class Cart extends Component
                 $invoice = new Invoice([
                     'user_id' => $user->id,
                     'due_at' => now()->addDays(7),
-                    'currency_code' => $cart->currency_code,
+                    'currency_code' => $cart->currency_code ?: session('currency', config('settings.default_currency')),
                 ]);
                 $invoice->save();
             }
@@ -207,7 +199,7 @@ class Cart extends Component
                 // Create the service
                 $service = $order->services()->create([
                     'user_id' => $user->id,
-                    'currency_code' => $cart->currency_code,
+                    'currency_code' => $cart->currency_code ?: session('currency', config('settings.default_currency')),
                     'product_id' => $item->product->id,
                     'plan_id' => $item->plan->id,
                     'price' => $price,
