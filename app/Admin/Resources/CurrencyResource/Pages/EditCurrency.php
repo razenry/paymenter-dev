@@ -17,7 +17,8 @@ class EditCurrency extends EditRecord
         }
 
         return [
-            DeleteAction::make(),
+            DeleteAction::make()
+                ->successRedirectUrl(CurrencyResource::getUrl('index')),
         ];
     }
 }
