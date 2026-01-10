@@ -65,6 +65,12 @@ class Tfa extends Component
 
         RateLimiter::clear('2fa');
 
+        // Check if there's a custom redirect from OAuth linking
+        if (Session::has('post_2fa_redirect')) {
+            $redirectUrl = Session::pull('post_2fa_redirect');
+            return $this->redirect($redirectUrl, true);
+        }
+
         return $this->redirect(route('dashboard'), true);
     }
 

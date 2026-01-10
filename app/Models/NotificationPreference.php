@@ -10,12 +10,14 @@ class NotificationPreference extends Model
         'user_id',
         'mail_enabled',
         'in_app_enabled',
+        'discord_enabled',
         'notification_template_id',
     ];
 
     protected $casts = [
         'mail_enabled' => 'boolean',
         'in_app_enabled' => 'boolean',
+        'discord_enabled' => 'boolean',
     ];
 
     public function notificationTemplate()

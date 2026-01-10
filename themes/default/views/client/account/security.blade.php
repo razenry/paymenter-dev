@@ -86,5 +86,37 @@
             @endif
             @endif
         </div>
+
+        <!-- Discord Connection -->
+        <div class="bg-background-secondary rounded-lg p-4">
+            <h5 class="text-lg font-bold pb-3">{{ __('account.discord_connection') }}</h5>
+            @if (config('settings.oauth_discord'))
+                @if (Auth::user()->discord_user_id)
+                    <p class="text-sm text-primary-100">{{ __('account.discord_connected') }}</p>
+                    <div class="flex items-center gap-2 mt-2">
+                        <x-tabler-brand-discord class="size-5 text-primary-400" />
+                        <span class="text-sm text-primary-400">{{ __('account.discord_connected_description') }}</span>
+                    </div>
+                    <x-button.secondary class="w-full mt-4" x-on:click="$store.confirmation.confirm({
+                        title: '{{ __('account.discord_disconnect') }}',
+                        message: '{{ __('account.discord_disconnect_description') }}',
+                        confirmText: '{{ __('account.confirm') }}',
+                        cancelText: '{{ __('account.cancel') }}',
+                        callback: () => $wire.disconnectDiscord()
+                    })">
+                        {{ __('account.discord_disconnect') }}
+                    </x-button.secondary>
+                @else
+                    <p class="text-sm text-primary-100">{{ __('account.discord_not_connected') }}</p>
+                    <p class="text-sm text-primary-400 mt-2">{{ __('account.discord_connection_description') }}</p>
+                    <a href="{{ route('oauth.redirect', 'discord') }}" class="inline-flex items-center justify-center w-full px-4 py-2 mt-4 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-colors">
+                        <x-tabler-brand-discord class="size-5 mr-2" />
+                        {{ __('account.connect_discord') }}
+                    </a>
+                @endif
+            @else
+                <p class="text-sm text-primary-400">{{ __('account.discord_oauth_disabled') }}</p>
+            @endif
+        </div>
     </div>
 </div>

@@ -119,6 +119,15 @@ class Security extends Component
         $this->notify(__('account.notifications.session_logged_out'));
     }
 
+    public function disconnectDiscord()
+    {
+        Auth::user()->update([
+            'discord_user_id' => null,
+        ]);
+
+        $this->notify(__('account.notifications.discord_disconnected'));
+    }
+
     public function render()
     {
         return view('client.account.security')->layoutData([

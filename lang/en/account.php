@@ -45,6 +45,7 @@ return [
         'two_factor_disabled' => 'Two-factor authentication has been disabled.',
         'two_factor_code_incorrect' => 'The code is incorrect.',
         'session_logged_out' => 'Session has been logged out.',
+        'discord_disconnected' => 'Discord account has been disconnected.',
     ],
 
     'no_credit' => 'You have no credits.',
@@ -75,7 +76,8 @@ return [
     'confirm' => 'Yes, Remove',
     'email_notifications' => 'Email Notifications',
     'in_app_notifications' => 'In-App Notifications',
-    'notifications_description' => 'Manage your notification preferences. You can choose to receive notifications via email, in-app (push), or both.',
+    'discord_notifications' => 'Discord Notifications',
+    'notifications_description' => 'Manage your notification preferences. You can choose to receive notifications via email, in-app (push), or Discord.',
     'notification' => 'Notification',
 
     'push_notifications' => 'Push Notifications',
@@ -86,4 +88,15 @@ return [
         'denied' => 'Push notifications are blocked. Please enable them in your browser settings.',
         'subscribed' => 'Push notifications are enabled.',
     ],
+
+    'discord_connection' => 'Discord Connection',
+    'discord_connected' => 'Your Discord account is connected.',
+    'discord_connected_description' => 'You will receive Discord notifications when enabled.',
+    'discord_disconnect' => 'Disconnect Discord',
+    'discord_disconnect_description' => 'Are you sure you want to disconnect your Discord account? You will stop receiving Discord notifications.',
+    'discord_not_connected' => 'Your Discord account is not connected.',
+    'discord_connection_description' => 'Connect your Discord account to receive notifications via DM.',
+    'connect_discord' => 'Connect Discord',
+    'discord_oauth_disabled' => 'Discord OAuth is not enabled by the administrator.',
+    'discord_disconnected' => 'Discord account has been disconnected.',
 ];

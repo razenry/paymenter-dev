@@ -20,6 +20,7 @@ class NotificationTemplate extends Model implements Auditable
         'bcc',
         'mail_enabled',
         'in_app_enabled',
+        'discord_enabled',
         'in_app_title',
         'in_app_body',
         'edit_preference_message',
@@ -31,6 +32,7 @@ class NotificationTemplate extends Model implements Auditable
         'bcc' => 'array',
         'mail_enabled' => NotificationEnabledStatus::class,
         'in_app_enabled' => NotificationEnabledStatus::class,
+        'discord_enabled' => NotificationEnabledStatus::class,
     ];
 
     public function preferences()
@@ -48,22 +50,34 @@ class NotificationTemplate extends Model implements Auditable
         return in_array($this->in_app_enabled, [NotificationEnabledStatus::ChoiceOn, NotificationEnabledStatus::ChoiceOff]);
     }
 
+    public function isDiscordUserControllable()
+    {
+        return in_array($this->discord_enabled, [NotificationEnabledStatus::ChoiceOn, NotificationEnabledStatus::ChoiceOff]);
+    }
+
     // Check if user has enabled this notification for email
     public function isEnabledForPreference(?NotificationPreference $preference = null, $type = 'mail')
     {
-        $type = $type === 'app' ? 'in_app_enabled' : 'mail_enabled';
-        if ($this->{$type} === NotificationEnabledStatus::Force) {
+        $fieldMap = [
+            'mail' => 'mail_enabled',
+            'app' => 'in_app_enabled',
+            'discord' => 'discord_enabled',
+        ];
+
+        $field = $fieldMap[$type] ?? 'mail_enabled';
+
+        if ($this->{$field} === NotificationEnabledStatus::Force) {
             return true;
         }
-        if ($this->{$type} === NotificationEnabledStatus::Never) {
+        if ($this->{$field} === NotificationEnabledStatus::Never) {
             return false;
         }
 
         if ($preference) {
-            return $preference->{$type};
+            return $preference->{$field};
         }
 
         // Return true if choice_on, false if choice_off
-        return $this->{$type} === NotificationEnabledStatus::ChoiceOn;
+        return $this->{$field} === NotificationEnabledStatus::ChoiceOn;
     }
 }

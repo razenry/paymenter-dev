@@ -17,10 +17,29 @@ class Notifications extends Component
 
     public function mount()
     {
-        foreach ($this->notifications as $notification) {
+        $userPreferences = Auth::user()->notificationsPreferences;
+
+        $notifications = NotificationTemplate::where('enabled', true)
+            ->where(function ($query) {
+                // If they are both force, or force and never, they are not user configurable
+                $query->where('mail_enabled', '!=', 'force')
+                    ->orWhere('in_app_enabled', '!=', 'force')
+                    ->orWhere('discord_enabled', '!=', 'force');
+            })
+            ->whereNotIn('key', [
+                'email_verification',
+                'password_reset',
+                'new_login_detected',
+            ])
+            ->get();
+
+        foreach ($notifications as $notification) {
+            $userPreference = $userPreferences->firstWhere('notification_template_id', $notification->id);
+
             $this->preferences[$notification->key] = [
-                'mail_enabled' => $notification->mail_enabled,
-                'in_app_enabled' => $notification->in_app_enabled,
+                'mail_enabled' => $notification->isEnabledForPreference($userPreference, 'mail'),
+                'in_app_enabled' => $notification->isEnabledForPreference($userPreference, 'app'),
+                'discord_enabled' => $notification->isEnabledForPreference($userPreference, 'discord'),
             ];
         }
     }
@@ -39,6 +58,7 @@ class Notifications extends Component
                 [
                     'mail_enabled' => $this->preferences[$preference->key]['mail_enabled'],
                     'in_app_enabled' => $this->preferences[$preference->key]['in_app_enabled'],
+                    'discord_enabled' => $this->preferences[$preference->key]['discord_enabled'],
                 ]
             );
         }
@@ -109,6 +129,18 @@ class Notifications extends Component
     }
 
     #[Computed]
+    public function discordNotificationsEnabled()
+    {
+        return config('settings.discord_notifications_enabled');
+    }
+
+    #[Computed]
+    public function discordConnected()
+    {
+        return Auth::user()->discord_user_id !== null;
+    }
+
+    #[Computed]
     public function notifications()
     {
         $userPreferences = Auth::user()->notificationsPreferences;
@@ -117,7 +149,8 @@ class Notifications extends Component
             ->where(function ($query) {
                 // If they are both force, or force and never, they are not user configurable
                 $query->where('mail_enabled', '!=', 'force')
-                    ->orWhere('in_app_enabled', '!=', 'force');
+                    ->orWhere('in_app_enabled', '!=', 'force')
+                    ->orWhere('discord_enabled', '!=', 'force');
             })
             ->whereNotIn('key', [
                 'email_verification',
@@ -132,10 +165,21 @@ class Notifications extends Component
                     'name' => $notification->edit_preference_message,
                     'mail_controllable' => $notification->isEmailUserControllable(),
                     'in_app_controllable' => $notification->isInAppUserControllable(),
+                    'discord_controllable' => $notification->isDiscordUserControllable(),
                     'mail_enabled' => $notification->isEnabledForPreference($userPreferences->firstWhere('notification_template_id', $notification->id), 'mail'),
                     'in_app_enabled' => $notification->isEnabledForPreference($userPreferences->firstWhere('notification_template_id', $notification->id), 'app'),
+                    'discord_enabled' => $notification->isEnabledForPreference($userPreferences->firstWhere('notification_template_id', $notification->id), 'discord'),
                 ];
             });
+    }
+
+    public function disconnectDiscord()
+    {
+        Auth::user()->update([
+            'discord_user_id' => null,
+        ]);
+
+        $this->notify(__('account.discord_disconnected'));
     }
 
     public function render()

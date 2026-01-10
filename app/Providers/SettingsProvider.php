@@ -37,7 +37,22 @@ class SettingsProvider extends ServiceProvider
             // Load settings from cache
             $settings = Cache::get('settings', []);
             if (empty($settings)) {
-                $settings = Setting::where('settingable_type', null)->get()->pluck('value', 'key');
+                $settingsRaw = Setting::where('settingable_type', null)->get();
+                $settings = [];
+                foreach ($settingsRaw as $setting) {
+                    $value = $setting->value;
+                    // Cast based on type
+                    if ($setting->type === 'boolean') {
+                        $value = (bool) $value;
+                    } elseif ($setting->type === 'integer' || $setting->type === 'number') {
+                        $value = (int) $value;
+                    } elseif ($setting->type === 'float' || $setting->type === 'decimal') {
+                        $value = (float) $value;
+                    } elseif ($setting->type === 'json') {
+                        $value = json_decode($value, true);
+                    }
+                    $settings[$setting->key] = $value;
+                }
                 Cache::put('settings', $settings);
             }
             // Is the current command a config:cache command?

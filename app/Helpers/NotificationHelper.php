@@ -3,6 +3,7 @@
 namespace App\Helpers;
 
 use App\Classes\PDF;
+use App\Helpers\DiscordNotificationHelper;
 use App\Mail\Mail;
 use App\Models\EmailLog;
 use App\Models\Invoice;
@@ -104,6 +105,50 @@ class NotificationHelper
         ]);
     }
 
+    public static function sendDiscordNotification(
+        NotificationTemplate $notification,
+        array $data,
+        User $user
+    ): void {
+        $title = BladeCompiler::render($notification->subject, $data);
+        $body = BladeCompiler::render($notification->body, $data);
+
+        // Create embed fields if we have data that can be formatted
+        $embedFields = [];
+
+        // Add common fields like invoice/order/service info if available
+        if (isset($data['invoice'])) {
+            $embedFields[] = [
+                'name' => 'Invoice',
+                'value' => '#' . ($data['invoice']->number ?? $data['invoice']->id),
+                'inline' => true,
+            ];
+            $embedFields[] = [
+                'name' => 'Amount',
+                'value' => $data['invoice']->formattedTotal,
+                'inline' => true,
+            ];
+        }
+
+        if (isset($data['order'])) {
+            $embedFields[] = [
+                'name' => 'Order',
+                'value' => '#' . $data['order']->id,
+                'inline' => true,
+            ];
+        }
+
+        if (isset($data['service'])) {
+            $embedFields[] = [
+                'name' => 'Service',
+                'value' => $data['service']->product->name,
+                'inline' => true,
+            ];
+        }
+
+        DiscordNotificationHelper::sendNotification($user, $body, $title, $embedFields);
+    }
+
     public static function sendNotification(
         $notificationTemplateKey,
         array $data,
@@ -125,6 +170,10 @@ class NotificationHelper
 
         if ($notification->isEnabledForPreference($userPreference, 'app')) {
             self::sendInAppNotification($notification, $data, $user, $show_in_app, $show_as_push);
+        }
+
+        if ($notification->isEnabledForPreference($userPreference, 'discord') && DiscordNotificationHelper::canSendNotification($user)) {
+            self::sendDiscordNotification($notification, $data, $user);
         }
     }
 
