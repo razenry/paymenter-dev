@@ -1,6 +1,6 @@
 # Stage 1:
 # Build the actual container with all of the needed PHP dependencies that will run the application.
-FROM --platform=$TARGETOS/$TARGETARCH php:8.3-fpm-alpine AS final
+FROM --platform=$TARGETOS/$TARGETARCH php:8.4-fpm-alpine AS final
 WORKDIR /app
 
 RUN apk add --no-cache --update ca-certificates dcron curl git supervisor tar unzip nginx libpng-dev libxml2-dev libzip-dev icu-dev autoconf make g++ gcc libc-dev linux-headers gmp-dev \
