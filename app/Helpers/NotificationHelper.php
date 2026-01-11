@@ -111,21 +111,67 @@ class NotificationHelper
         User $user
     ): void {
         $title = BladeCompiler::render($notification->subject, $data);
-        $body = BladeCompiler::render($notification->body, $data);
+        $bodyRaw = BladeCompiler::render($notification->body, $data);
+
+        // Extract hyperlinks before stripping HTML tags
+        $buttonUrl = null;
+        $buttonLabel = 'View Details';
+
+        // Look for <a> tags in the HTML content
+        if (preg_match('/<a[^>]+href=["\']([^"\']+)["\'][^>]*>([^<]+)<\/a>/i', $bodyRaw, $matches)) {
+            $buttonUrl = $matches[1];
+            $buttonLabel = strip_tags($matches[2]);
+            // Remove the hyperlink from the body
+            $bodyRaw = preg_replace('/<a[^>]+href=["\'][^"\']+["\'][^>]*>[^<]+<\/a>/i', '', $bodyRaw);
+        }
+
+        // Strip HTML tags and convert to plain text for Discord
+        $body = strip_tags($bodyRaw);
+
+        // Check if the body contains a markdown table
+        $hasTable = preg_match('/\|\s*[:-]+\s*\|\s*[:-]+\s*\|/', $body);
+
+        if ($hasTable) {
+            // For tables, preserve line breaks but clean up excessive whitespace
+            // Convert multiple spaces to single space, but keep newlines
+            $body = preg_replace('/[^\S\n]+/', ' ', $body);
+            $body = preg_replace('/\n\s+/', "\n", $body); // Remove leading spaces on lines
+            $body = trim($body);
+
+            // Format table columns to align properly
+            $body = self::formatTableForDiscord($body);
+
+            // Wrap the entire message in a codeblock
+            $body = "```\n" . $body . "\n```";
+        } else {
+            // For regular messages, clean up all extra whitespace
+            $body = preg_replace('/\s+/', ' ', $body);
+            $body = trim($body);
+        }
 
         // Create embed fields if we have data that can be formatted
         $embedFields = [];
 
         // Add common fields like invoice/order/service info if available
+        // IMPORTANT: All values must be simple strings to avoid Discord's "over 9 levels deep" error
         if (isset($data['invoice'])) {
+            $invoice = $data['invoice'];
             $embedFields[] = [
                 'name' => 'Invoice',
-                'value' => '#' . ($data['invoice']->number ?? $data['invoice']->id),
+                'value' => (string) ('#' . ($invoice->number ?? $invoice->id)),
                 'inline' => true,
             ];
+
+            // Get the formatted total as a string
+            $total = $invoice->formattedTotal;
+            // If it's an object, try to convert it to string
+            if (is_object($total)) {
+                $total = method_exists($total, '__toString') ? (string) $total : json_encode($total);
+            }
+
             $embedFields[] = [
                 'name' => 'Amount',
-                'value' => $data['invoice']->formattedTotal,
+                'value' => (string) $total,
                 'inline' => true,
             ];
         }
@@ -133,7 +179,7 @@ class NotificationHelper
         if (isset($data['order'])) {
             $embedFields[] = [
                 'name' => 'Order',
-                'value' => '#' . $data['order']->id,
+                'value' => (string) ('#' . $data['order']->id),
                 'inline' => true,
             ];
         }
@@ -141,12 +187,12 @@ class NotificationHelper
         if (isset($data['service'])) {
             $embedFields[] = [
                 'name' => 'Service',
-                'value' => $data['service']->product->name,
+                'value' => (string) $data['service']->product->name,
                 'inline' => true,
             ];
         }
 
-        DiscordNotificationHelper::sendNotification($user, $body, $title, $embedFields);
+        DiscordNotificationHelper::sendNotification($user, $body, $title, $embedFields, $buttonUrl, $buttonLabel);
     }
 
     public static function sendNotification(
@@ -172,7 +218,21 @@ class NotificationHelper
             self::sendInAppNotification($notification, $data, $user, $show_in_app, $show_as_push);
         }
 
-        if ($notification->isEnabledForPreference($userPreference, 'discord') && DiscordNotificationHelper::canSendNotification($user)) {
+        // Discord notification debug logging
+        $discordEnabled = $notification->isEnabledForPreference($userPreference, 'discord');
+        $canSend = DiscordNotificationHelper::canSendNotification($user);
+        logger()->debug('Discord notification check', [
+            'user_id' => $user->id,
+            'notification_key' => $notificationTemplateKey,
+            'discord_enabled_for_preference' => $discordEnabled,
+            'can_send_notification' => $canSend,
+            'discord_user_id' => $user->discord_user_id,
+            'bot_token_set' => !empty(config('settings.discord_bot_token')),
+            'notifications_enabled_in_settings' => config('settings.discord_notifications_enabled'),
+        ]);
+
+        if ($discordEnabled && $canSend) {
+            logger()->debug('Attempting to send Discord notification', ['user_id' => $user->id, 'key' => $notificationTemplateKey]);
             self::sendDiscordNotification($notification, $data, $user);
         }
     }
@@ -333,5 +393,57 @@ class NotificationHelper
         $data['cancellation'] = $cancellation;
         $data['service'] = $cancellation->service;
         self::sendNotification('service_cancellation_received', $data, $user);
+    }
+
+    /**
+     * Format a markdown table for Discord by aligning columns properly
+     */
+    private static function formatTableForDiscord(string $tableText): string
+    {
+        $lines = explode("\n", $tableText);
+        $tableLines = [];
+        $columnWidths = [];
+
+        // First pass: collect all table rows and calculate column widths
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if (empty($line)) continue;
+
+            // Check if this is a table row (starts and ends with |)
+            if (strpos($line, '|') === 0 && strrpos($line, '|') === strlen($line) - 1) {
+                $cells = array_map('trim', explode('|', trim($line, '|')));
+                $tableLines[] = $cells;
+
+                // Update column widths
+                foreach ($cells as $colIndex => $cell) {
+                    $width = strlen($cell);
+                    if (!isset($columnWidths[$colIndex]) || $width > $columnWidths[$colIndex]) {
+                        $columnWidths[$colIndex] = $width;
+                    }
+                }
+            } else {
+                // Non-table line, add as-is
+                $tableLines[] = $line;
+            }
+        }
+
+        // Second pass: format each row with proper alignment
+        $formattedLines = [];
+        foreach ($tableLines as $row) {
+            if (is_array($row)) {
+                // This is a table row
+                $formattedCells = [];
+                foreach ($row as $colIndex => $cell) {
+                    $width = $columnWidths[$colIndex] ?? strlen($cell);
+                    $formattedCells[] = str_pad($cell, $width, ' ', STR_PAD_BOTH);
+                }
+                $formattedLines[] = '| ' . implode(' | ', $formattedCells) . ' |';
+            } else {
+                // Non-table line
+                $formattedLines[] = $row;
+            }
+        }
+
+        return implode("\n", $formattedLines);
     }
 }

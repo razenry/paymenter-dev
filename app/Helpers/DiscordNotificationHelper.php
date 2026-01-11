@@ -11,15 +11,33 @@ class DiscordNotificationHelper
     /**
      * Send a Discord DM to a user
      */
-    public static function sendDM(User $user, string $message, string $embedTitle = null, array $embedFields = []): bool
+    public static function sendDM(User $user, string $message, string $embedTitle = null, array $embedFields = [], string $buttonUrl = null, string $buttonLabel = null): bool
     {
+            logger()->debug('DiscordNotificationHelper::sendDM called', [
+                'user_id' => $user->id,
+                'discord_user_id' => $user->discord_user_id,
+                'message_length' => strlen($message),
+                'has_embed_title' => !empty($embedTitle),
+                'embed_fields_count' => count($embedFields),
+                'has_button' => !empty($buttonUrl),
+                'button_label' => $buttonLabel,
+            ]);
+
         if (!$user->discord_user_id || !config('settings.discord_bot_token') || !config('settings.discord_notifications_enabled')) {
+            logger()->warning('Discord DM blocked - missing requirements', [
+                'user_id' => $user->id,
+                'has_discord_user_id' => !empty($user->discord_user_id),
+                'has_bot_token' => !empty(config('settings.discord_bot_token')),
+                'notifications_enabled' => config('settings.discord_notifications_enabled'),
+            ]);
             return false;
         }
 
         $botToken = config('settings.discord_bot_token');
 
         try {
+            logger()->debug('Creating DM channel with Discord user', ['discord_user_id' => $user->discord_user_id]);
+            
             // First, create a DM channel with the user
             $dmResponse = Http::withHeaders([
                 'Authorization' => "Bot {$botToken}",
@@ -29,10 +47,17 @@ class DiscordNotificationHelper
             ]);
 
             if (!$dmResponse->successful()) {
+                logger()->error('Failed to create DM channel', [
+                    'user_id' => $user->id,
+                    'discord_user_id' => $user->discord_user_id,
+                    'status' => $dmResponse->status(),
+                    'response' => $dmResponse->json(),
+                ]);
                 return false;
             }
 
             $dmChannel = $dmResponse->json();
+            logger()->debug('DM channel created successfully', ['channel_id' => $dmChannel['id']]);
 
             // Prepare the message payload
             $payload = [
@@ -57,11 +82,50 @@ class DiscordNotificationHelper
                 $payload['embeds'] = [$embed];
             }
 
+            // Add button component if button URL is provided
+            if ($buttonUrl) {
+                $payload['components'] = [
+                    [
+                        'type' => 1, // ACTION_ROW
+                        'components' => [
+                            [
+                                'type' => 2, // BUTTON
+                                'style' => 5, // LINK style
+                                'label' => $buttonLabel ?: 'View Details',
+                                'url' => $buttonUrl,
+                            ]
+                        ]
+                    ]
+                ];
+            }
+
+            logger()->debug('Sending Discord message', [
+                'channel_id' => $dmChannel['id'],
+                'payload_keys' => array_keys($payload),
+                'has_components' => isset($payload['components']),
+            ]);
+
             // Send the message
             $messageResponse = Http::withHeaders([
                 'Authorization' => "Bot {$botToken}",
                 'Content-Type' => 'application/json',
             ])->post("https://discord.com/api/v10/channels/{$dmChannel['id']}/messages", $payload);
+
+            if (!$messageResponse->successful()) {
+                logger()->error('Failed to send Discord message', [
+                    'user_id' => $user->id,
+                    'channel_id' => $dmChannel['id'],
+                    'status' => $messageResponse->status(),
+                    'response' => $messageResponse->json(),
+                ]);
+                return false;
+            }
+
+            logger()->info('Discord message sent successfully', [
+                'user_id' => $user->id,
+                'discord_user_id' => $user->discord_user_id,
+                'message_id' => $messageResponse->json()['id'] ?? null,
+            ]);
 
             return $messageResponse->successful();
 
@@ -80,9 +144,9 @@ class DiscordNotificationHelper
     /**
      * Send Discord notification to user (alias for sendDM for backward compatibility)
      */
-    public static function sendNotification(User $user, string $message, string $embedTitle = null, array $embedFields = []): bool
+    public static function sendNotification(User $user, string $message, string $embedTitle = null, array $embedFields = [], string $buttonUrl = null, string $buttonLabel = null): bool
     {
-        return self::sendDM($user, $message, $embedTitle, $embedFields);
+        return self::sendDM($user, $message, $embedTitle, $embedFields, $buttonUrl, $buttonLabel);
     }
 
     /**
