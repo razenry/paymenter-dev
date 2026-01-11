@@ -341,7 +341,7 @@ class Pterodactyl extends Server
         $deploymentData = $this->generateDeploymentData($settings, $environment);
 
         $serverCreationData = [
-            'split_limit' => (int) $settings['split_limit'] ?? 0,
+            'split_limit' => isset($settings['split_limit']) ? (int) $settings['split_limit'] : 0,
             'external_id' => (string) $service->id,
             'name' => isset($settings['servername']) ? $settings['servername'] : $service->product->name . ' #' . $service->id,
             'user' => (int) $user,
@@ -365,6 +365,7 @@ class Pterodactyl extends Server
                 'backups' => (int) $settings['backups'],
             ],
             'start_on_completion' => $settings['start_on_completion'] ?? false,
+            'billing_expire_date' => $service->expires_at,
         ];
         if ($deploymentData['auto_deploy']) {
             $portRanges = [];
@@ -765,5 +766,80 @@ class Pterodactyl extends Server
             'location' => ['key' => 'location_ids', 'value' => json_encode([$value]), 'type' => 'array'],
             default => ['key' => $key, 'value' => $value]
         };
+    }
+
+    /**
+     * Update the billing expire date of a server
+     *
+     * @param  string  $newDate  Format: Y-m-d H:i:s
+     *
+     * @throws Exception
+     */
+    public function updateBillingDate(Service $service, string $newDate): bool
+    {
+        $server = $this->getServer($service->id, raw: true);
+
+        $updateData = [
+            'name' => $server['attributes']['name'],
+            'external_id' => $server['attributes']['external_id'],
+            'user' => $server['attributes']['user'],
+            'description' => $server['attributes']['description'],
+            'billing_expire_date' => $newDate,
+        ];
+
+        $this->request(
+            '/api/application/servers/' . $server['attributes']['id'] . '/details',
+            'patch',
+            $updateData
+        );
+
+        return true;
+    }
+
+    public function boot()
+    {
+        Event::listen(
+            ServiceEvent\Updated::class,
+            function ($event) {
+                try {
+                    $this->updatedEvent($event);
+                } catch (Exception $e) {
+                    // Log the error
+                    if (config('settings.debug', false)) {
+                        throw $e;
+                    }
+                }
+            }
+        );
+    }
+
+    private function updatedEvent($event)
+    {
+        logger()->debug('event', ['event' => $event]);
+        /** @var Service $service */
+        $service = $event->service ?? null;
+
+        if (!$service) {
+            return;
+        }
+
+        $product = $service->product;
+        $extension = $product->server->extension;
+
+        if ($extension !== 'PterodactylProxmox') {
+            logger()->debug('invalid extension, skipping');
+
+            return;
+        }
+
+        try {
+            // Use expires_at from the service as the billing date
+            $newDate = $service->expires_at; // already in ISO format
+            $this->updateBillingDate($service, $service->expires_at);
+
+            logger()->debug("Updated billing date for service #{$service->id} to {$newDate}");
+        } catch (Exception $e) {
+            logger()->error("Failed to update billing date for service #{$service->id}: " . $e->getMessage());
+        }
     }
 }
