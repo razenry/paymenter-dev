@@ -826,7 +826,7 @@ class Pterodactyl extends Server
         $product = $service->product;
         $extension = $product->server->extension;
 
-        if ($extension !== 'PterodactylProxmox') {
+        if ($extension !== 'Pterodactyl') {
             logger()->debug('invalid extension, skipping');
 
             return;
