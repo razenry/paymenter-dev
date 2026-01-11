@@ -3,12 +3,15 @@
 namespace Paymenter\Extensions\Servers\Pterodactyl;
 
 use App\Classes\Extension\Server;
+use App\Events\Service as ServiceEvent;
 use App\Exceptions\DisplayException;
 use App\Models\Service;
 use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Event;
+
 
 /**
  * Class Pterodactyl
