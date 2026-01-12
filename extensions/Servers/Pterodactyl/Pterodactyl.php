@@ -7,11 +7,10 @@ use App\Events\Service as ServiceEvent;
 use App\Exceptions\DisplayException;
 use App\Models\Service;
 use Exception;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Event;
-
 
 /**
  * Class Pterodactyl
@@ -837,10 +836,22 @@ class Pterodactyl extends Server
 
         try {
             // Use expires_at from the service as the billing date
-            $newDate = $service->expires_at; // already in ISO format
-            $this->updateBillingDate($service, $service->expires_at);
+            $newDate = $service->expires_at;
 
-            logger()->debug("Updated billing date for service #{$service->id} to {$newDate}");
+            if ($newDate === null) {
+                logger()->debug('Invalid date, skipping');
+
+                return;
+            }
+
+            $this->updateBillingDate(
+                $service,
+                $newDate->format('Y-m-d H:i:s')
+            );
+
+            logger()->debug(
+                "Updated billing date for service #{$service->id} to {$newDate->format('Y-m-d H:i:s')}"
+            );
         } catch (Exception $e) {
             logger()->error("Failed to update billing date for service #{$service->id}: " . $e->getMessage());
         }

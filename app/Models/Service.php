@@ -6,12 +6,30 @@ use App\Classes\Price;
 use App\Classes\Settings;
 use App\Models\Traits\HasProperties;
 use App\Observers\ServiceObserver;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use OwenIt\Auditing\Contracts\Auditable;
 
 #[ObservedBy([ServiceObserver::class])]
+
+/**
+ * @property int $id
+ * @property int $order_id
+ * @property int $product_id
+ * @property int $plan_id
+ * @property int $quantity
+ * @property float $price
+ * @property Carbon|null $expires_at
+ * @property string|null $subscription_id
+ * @property string $status
+ * @property int|null $coupon_id
+ * @property int $user_id
+ * @property string $currency_code
+ * @property int|null $billing_agreement_id
+ * @property bool $disable_termination
+ */
 class Service extends Model implements Auditable
 {
     use \App\Models\Traits\Auditable, HasFactory, HasProperties;
