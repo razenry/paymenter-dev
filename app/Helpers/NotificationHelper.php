@@ -112,19 +112,70 @@ class NotificationHelper
         bool $show_in_app = true,
         bool $show_as_push = true
     ): void {
+        logger()->debug('sendNotification called', [
+            'template_key' => $notificationTemplateKey,
+            'user_id' => $user->id,
+        ]);
+
         $notification = NotificationTemplate::where('key', $notificationTemplateKey)->first();
-        if (!$notification || !$notification->enabled) {
+
+        if (!$notification) {
+            logger()->debug('Notification template not found', [
+                'template_key' => $notificationTemplateKey,
+            ]);
+
             return;
         }
 
-        $userPreference = $user->notificationsPreferences()->where('notification_template_id', $notification->id)->first();
+        if (!$notification->enabled) {
+            logger()->debug('Notification template is disabled', [
+                'template_key' => $notificationTemplateKey,
+            ]);
+
+            return;
+        }
+
+        $userPreference = $user->notificationsPreferences()
+            ->where('notification_template_id', $notification->id)
+            ->first();
+
+        logger()->debug('User preference fetched', [
+            'user_id' => $user->id,
+            'preference' => $userPreference?->toArray() ?? null,
+        ]);
 
         if ($notification->isEnabledForPreference($userPreference, 'mail') && !config('settings.mail_disable')) {
-            self::sendEmailNotification($notification, $data, $user, $attachments);
+            logger()->debug('Sending email notification', [
+                'user_id' => $user->id,
+                'template_key' => $notificationTemplateKey,
+            ]);
+
+            try {
+                self::sendEmailNotification($notification, $data, $user, $attachments);
+                logger()->debug('Email notification sent successfully', [
+                    'user_id' => $user->id,
+                ]);
+            } catch (\Exception $e) {
+                logger()->error('Failed to send email notification', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        } else {
+            logger()->debug('Email notification not sent due to preference or mail disabled', [
+                'user_id' => $user->id,
+            ]);
         }
 
         if ($notification->isEnabledForPreference($userPreference, 'app')) {
+            logger()->debug('Sending in-app notification', [
+                'user_id' => $user->id,
+            ]);
             self::sendInAppNotification($notification, $data, $user, $show_in_app, $show_as_push);
+        } else {
+            logger()->debug('In-app notification not sent due to preference', [
+                'user_id' => $user->id,
+            ]);
         }
     }
 
@@ -249,14 +300,27 @@ class NotificationHelper
     {
         $cacheKey = 'email_verification_sent:' . $user->id;
 
+        logger()->debug('Attempting to send verification email', ['user_id' => $user->id]);
+
         // Block resend if still within cooldown (15 minutes)
         if (Cache::has($cacheKey)) {
+            logger()->debug('Email not sent: cooldown active', ['user_id' => $user->id]);
+
             return;
         }
 
+        // change cache time to 5 minutes
+
+        $cacheTime = 5;
+
         $expireTime = Config::get('auth.verification.expire', 15);
+
         // Mark as sent for 15 minutes
-        Cache::put($cacheKey, true, $expireTime);
+        Cache::put($cacheKey, true, $cacheTime);
+        logger()->debug('Cache set for email verification', [
+            'user_id' => $user->id,
+            'expire_minutes' => $expireTime,
+        ]);
 
         $data['user'] = $user;
         $data['url'] = URL::temporarySignedRoute(
@@ -270,7 +334,15 @@ class NotificationHelper
 
         $data['expire_time'] = $expireTime;
 
+        // Debug before sending notification
+        logger()->debug('Sending email verification notification', [
+            'user_id' => $user->id,
+            'url' => $data['url'],
+        ]);
+
         self::sendNotification('email_verification', $data, $user);
+
+        logger()->debug('Email verification notification method finished', ['user_id' => $user->id]);
     }
 
     public static function passwordResetNotification(User $user, array $data = []): void
