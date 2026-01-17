@@ -244,4 +244,27 @@ class Show extends Component
             echo PDF::generateInvoice($this->invoice)->stream();
         }, 'invoice-' . ($this->invoice->number ?? $this->invoice->id) . '.pdf');
     }
+
+    public function cancelInvoice()
+    {
+        // Only allow canceling pending service extension invoices
+        if ($this->invoice->status !== 'pending') {
+            $this->notify(__('Only pending invoices can be cancelled.'), 'error');
+            $this->showCancelModal = false;
+            return;
+        }
+
+        if (!$this->invoice->isServiceExtensionInvoice()) {
+            $this->notify(__('This invoice cannot be cancelled.'), 'error');
+            $this->showCancelModal = false;
+            return;
+        }
+
+        // Cancel the invoice
+        $this->invoice->status = Invoice::STATUS_CANCELLED;
+        $this->invoice->save();
+
+        $this->showCancelModal = false;
+        $this->notify(__('Invoice has been cancelled successfully.'), 'success');
+    }
 }

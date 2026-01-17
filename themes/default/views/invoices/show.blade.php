@@ -1,10 +1,48 @@
 <div class="container mt-14">
-    <div @if ($checkPayment) wire:poll.5s="checkPaymentStatus" @endif>
+    <div @if ($checkPayment && !$showCancelModal) wire:poll.5s="checkPaymentStatus" @endif>
         @if ($this->pay || $showPayModal)
         @include('invoices.partials.payment-modal')
         @endif
 
-        <div class="flex justify-end">
+        <div class="flex justify-end gap-4">
+            @if($invoice->isServiceExtensionInvoice() && $invoice->status === 'pending')
+            <div class="text-right" x-data="{ showCancelModal: false }">
+                <span class="cursor-pointer text-base underline text-red-600" @click="showCancelModal = true">
+                    Cancel Invoice
+                </span>
+                
+                {{-- Cancel Invoice Confirmation Modal --}}
+                <template x-if="showCancelModal">
+                    <div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+                        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" @click="showCancelModal = false"></div>
+                        <div class="relative bg-background-secondary rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg border border-neutral">
+                            <div class="bg-background-secondary px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                                <div class="text-center">
+                                    <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 dark:bg-red-900/20 mb-4">
+                                        <x-ri-error-warning-line class="h-6 w-6 text-red-500" />
+                                    </div>
+                                    <h3 class="text-lg leading-6 font-medium mb-2" id="modal-title">
+                                        Cancel Invoice
+                                    </h3>
+                                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                                        Are you sure you want to cancel this invoice? This action cannot be undone.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="bg-background px-4 py-3 sm:px-6 flex justify-center gap-3">
+                                <x-button.danger wire:click="cancelInvoice" @click="showCancelModal = false" wire:loading.attr="disabled">
+                                    <span wire:loading wire:target="cancelInvoice">Cancelling...</span>
+                                    <span wire:loading.remove wire:target="cancelInvoice">Yes, Cancel Invoice</span>
+                                </x-button.danger>
+                                <x-button.secondary @click="showCancelModal = false">
+                                    No, Keep Invoice
+                                </x-button.secondary>
+                            </div>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            @endif
             <div class="max-w-[200px] w-full text-right">
                 <span class="cursor-pointer text-base underline" wire:click="downloadPDF">
                     <span wire:loading wire:target="downloadPDF">

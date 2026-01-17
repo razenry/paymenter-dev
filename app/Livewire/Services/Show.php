@@ -37,6 +37,10 @@ class Show extends Component
 
     public bool $showGenerateInvoice = false;
 
+    public bool $showAutoCancelModal = false;
+
+    public $pendingInvoiceId = null;
+
     public $selectedMonths;
 
     public $selectedMethod;
@@ -153,15 +157,58 @@ class Show extends Component
             return;
         }
 
-        // Check if there are any unpaid invoices for this service
-        if ($this->service->hasUnpaidInvoices()) {
-            $this->notify('This service has unpaid invoices. Please pay existing invoices first.', 'error');
-            $this->showGenerateInvoice = false;
-            $this->selectedMonths = null;
+        // Check if there are any pending service extension invoices for this service
+        $pendingInvoice = Invoice::where('user_id', $this->service->user_id)
+            ->where('status', 'pending')
+            ->whereHas('items', function ($query) {
+                $query->where('reference_type', Service::class)
+                    ->where('reference_id', $this->service->id)
+                    ->whereRaw("description LIKE '%- Extension%'");
+            })
+            ->first();
+
+        if ($pendingInvoice) {
+            $this->pendingInvoiceId = $pendingInvoice->id;
+            $this->showAutoCancelModal = true;
             return;
         }
 
+        // Proceed with invoice generation
+        $this->createNewInvoice();
+    }
+
+    public function confirmGenerateInvoice()
+    {
+        // Cancel the existing pending invoice
+        if ($this->pendingInvoiceId) {
+            $invoice = Invoice::find($this->pendingInvoiceId);
+            if ($invoice && $invoice->status === 'pending') {
+                $invoice->status = Invoice::STATUS_CANCELLED;
+                $invoice->save();
+            }
+        }
+
+        // Close the modal
+        $this->showAutoCancelModal = false;
+        $this->pendingInvoiceId = null;
+
+        // Create new invoice
+        $this->createNewInvoice();
+    }
+
+    public function proceedWithoutCancel()
+    {
+        $this->showAutoCancelModal = false;
+        $this->pendingInvoiceId = null;
+        $this->showGenerateInvoice = false;
+        $this->selectedMonths = null;
+    }
+
+    private function createNewInvoice()
+    {
         try {
+            $months = (int) $this->selectedMonths;
+            
             // Calculate the price for the specified number of months
             $monthlyPrice = $this->service->calculatePrice();
             $totalPrice = (float) $monthlyPrice * $months;
@@ -188,6 +235,7 @@ class Show extends Component
 
             $this->notify('Invoice generated successfully', 'success');
             $this->selectedMonths = null;
+            $this->showGenerateInvoice = false;
 
             // Redirect to the invoice view
             return $this->redirect(route('invoices.show', $invoice->id));

@@ -163,6 +163,48 @@
                             </x-slot>
                         </x-modal>
                     @endif
+                    
+                    @if($showAutoCancelModal)
+                        <x-modal open="true" title="Pending Invoice Found" width="max-w-md">
+                            <div class="p-6">
+                                <div class="flex items-start mb-4">
+                                    <div class="flex-shrink-0">
+                                        <x-ri-error-warning-line class="h-6 w-6 text-yellow-500" />
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-base/70">
+                                            A pending service extension invoice already exists for this service.
+                                        </p>
+                                        <p class="text-base/70 mt-2">
+                                            <a href="{{ route('invoices.show', $pendingInvoiceId) }}" class="text-primary underline" target="_blank">
+                                                View existing invoice
+                                            </a>
+                                        </p>
+                                        <p class="text-base/70 mt-3">
+                                            Would you like to cancel the existing invoice and create a new one?
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <button wire:click="confirmGenerateInvoice" class="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                        <span wire:loading.remove wire:target="confirmGenerateInvoice">Cancel & Generate</span>
+                                        <span wire:loading wire:target="confirmGenerateInvoice">Processing...</span>
+                                    </button>
+                                    <button wire:click="proceedWithoutCancel" @click="open = false" class="px-4 py-2 bg-background-secondary hover:bg-background-tertiary border border-neutral text-base rounded-lg transition-colors">
+                                        Keep Existing
+                                    </button>
+                                </div>
+                            </div>
+                            <x-slot name="closeTrigger">
+                                <div class="flex gap-4">
+                                    <button wire:click="proceedWithoutCancel" @click="open = false" class="text-primary-100">
+                                        <x-ri-close-fill class="size-6" />
+                                    </button>
+                                </div>
+                            </x-slot>
+                        </x-modal>
+                    @endif
                 </div>
                 <div class="mt-2 flex flex-row gap-2 flex-wrap">
                     @foreach ($buttons as $button)
