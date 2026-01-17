@@ -227,8 +227,8 @@ class Show extends Component
 
             $invoice->items()->create([
                 'description' => $this->service->product->name . ' - Extension (' . $startDate->format('M d, Y') . ' - ' . $endDate->format('M d, Y') . ')',
-                'price' => $totalPrice,
-                'quantity' => 1,
+                'price' => $monthlyPrice,
+                'quantity' => $months,
                 'reference_type' => Service::class,
                 'reference_id' => $this->service->id,
             ]);

@@ -110,14 +110,14 @@ class Service extends Model implements Auditable
     /**
      * Calculate next due date.
      */
-    public function calculateNextDueDate()
+    public function calculateNextDueDate($multiplier = 1)
     {
         if ($this->plan->type == 'one-time' || $this->plan->type == 'free') {
             return null;
         }
         $date = $this->expires_at ?? now();
 
-        return $date->{'add' . ucfirst($this->plan->billing_unit) . 's'}($this->plan->billing_period);
+        return $date->{'add' . ucfirst($this->plan->billing_unit) . 's'}($this->plan->billing_period * $multiplier);
     }
 
     /**

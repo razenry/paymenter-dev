@@ -13,7 +13,7 @@ class RenewServiceService
      *
      * @return void
      */
-    public function handle(Service $service)
+    public function handle(Service $service, $multiplier = 1)
     {
         if ($service->product->server) {
             if ($service->status == Service::STATUS_SUSPENDED) {
@@ -23,7 +23,7 @@ class RenewServiceService
             }
         }
 
-        $service->expires_at = $service->calculateNextDueDate();
+        $service->expires_at = $service->calculateNextDueDate($multiplier);
         $service->save();
     }
 }
