@@ -103,7 +103,7 @@
             @if($this->discordConnected())
                 <p class="text-sm text-primary-100">{{ __('account.discord_connected') }}</p>
                 <div class="flex items-center gap-2 mt-2">
-                    <x-tabler-brand-discord class="size-5 text-primary-400" />
+                    <x-ri-discord-fill class="size-5 text-primary-400" />
                     <span class="text-sm text-primary-400">{{ __('account.discord_connected_description') }}</span>
                 </div>
                 <x-button.secondary class="w-full mt-4" x-on:click="$store.confirmation.confirm({
@@ -118,7 +118,7 @@
             @else
                 <p class="text-base/70 mb-4">{{ __('account.discord_connection_description') }}</p>
                 <a href="{{ route('oauth.link', 'discord') }}" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-colors">
-                    <x-tabler-brand-discord class="size-5 mr-2" />
+                    <x-ri-discord-fill class="size-5 mr-2" />
                     {{ __('account.connect_discord') }}
                 </a>
             @endif
@@ -150,7 +150,7 @@
                         @if($this->discordNotificationsEnabled && $this->discordConnected)
                         <th class="text-center py-4 px-4 text-primary font-medium">
                             <div class="flex items-center justify-center gap-2">
-                                <x-tabler-brand-discord class="size-4" />
+                                <x-ri-discord-fill class="size-4" />
                                 <span>{{ __('account.discord_notifications') }}</span>
                             </div>
                         </th>

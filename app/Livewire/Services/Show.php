@@ -5,6 +5,8 @@ namespace App\Livewire\Services;
 use App\Exceptions\DisplayException;
 use App\Helpers\ExtensionHelper;
 use App\Livewire\Component;
+use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Service;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -32,6 +34,10 @@ class Show extends Component
     public bool $showCancelUpgrade = false;
 
     public bool $showBillingAgreement = false;
+
+    public bool $showGenerateInvoice = false;
+
+    public $selectedMonths;
 
     public $selectedMethod;
 
@@ -126,6 +132,70 @@ class Show extends Component
         } catch (Exception $e) {
             // Fallback for unexpected errors
             $this->notify('Something went wrong. Please try again.', 'error');
+        }
+    }
+
+    public function generateInvoice()
+    {
+        // Validate that months are selected
+        if (empty($this->selectedMonths)) {
+            $this->notify('Please select a duration', 'error');
+            return;
+        }
+
+        $months = (int) $this->selectedMonths;
+
+        // Validate that the service is active and not cancelled
+        if ($this->service->status !== Service::STATUS_ACTIVE) {
+            $this->notify('Cannot generate invoice for inactive service', 'error');
+            $this->showGenerateInvoice = false;
+            $this->selectedMonths = null;
+            return;
+        }
+
+        // Check if there are any unpaid invoices for this service
+        if ($this->service->hasUnpaidInvoices()) {
+            $this->notify('This service has unpaid invoices. Please pay existing invoices first.', 'error');
+            $this->showGenerateInvoice = false;
+            $this->selectedMonths = null;
+            return;
+        }
+
+        try {
+            // Calculate the price for the specified number of months
+            $monthlyPrice = $this->service->calculatePrice();
+            $totalPrice = (float) $monthlyPrice * $months;
+
+            // Create the invoice
+            $invoice = Invoice::create([
+                'user_id' => $this->service->user_id,
+                'currency_code' => $this->service->currency_code,
+                'status' => 'pending',
+                'due_at' => now()->addDays(7), // Due in 7 days
+            ]);
+
+            // Create the invoice item
+            $startDate = $this->service->expires_at ?? now();
+            $endDate = $startDate->copy()->addMonths($months);
+
+            $invoice->items()->create([
+                'description' => $this->service->product->name . ' - Extension (' . $startDate->format('M d, Y') . ' - ' . $endDate->format('M d, Y') . ')',
+                'price' => $totalPrice,
+                'quantity' => 1,
+                'reference_type' => Service::class,
+                'reference_id' => $this->service->id,
+            ]);
+
+            $this->notify('Invoice generated successfully', 'success');
+            $this->selectedMonths = null;
+
+            // Redirect to the invoice view
+            return $this->redirect(route('invoices.show', $invoice->id));
+
+        } catch (Exception $e) {
+            $this->notify('Failed to generate invoice: ' . $e->getMessage(), 'error');
+            $this->showGenerateInvoice = false;
+            $this->selectedMonths = null;
         }
     }
 

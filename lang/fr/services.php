@@ -66,4 +66,8 @@ return [
 
     'remove_payment_method' => 'Supprimer le moyen de paiement',
     'remove_payment_method_confirm' => 'Êtes-vous sûr de vouloir supprimer le mode de paiement ":name" de ce service ? Vous ne serez plus automatiquement prélevé pour ce service.',
+    'generate_invoice' => 'Générer Facture',
+    'extend_service' => 'Prolonger le Service',
+    'month' => 'Mois',
+    'months' => 'Mois',
 ];

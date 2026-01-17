@@ -1,9 +1,8 @@
 @props([
-    'width' => null,
-    'content' => null,
-    'trigger' => null,
+    'width' => 'w-48',
     'showArrow' => true,
 ])
+
 <div class="relative" x-data="{ open: false, adjustWidth: 0 }" x-init="$watch('open', value => {
     if (value) {
         adjustWidth = 0; // Reset adjustWidth when opening
@@ -16,18 +15,16 @@
     }
 })">
 
-    <button
-        class="flex flex-row items-center px-2 py-1 text-sm font-semibold whitespace-nowrap text-base hover:text-base/80"
-        x-on:click="open = !open">
+    <div x-on:click="open = !open" class="cursor-pointer">
         {{ $trigger }}
-        @if($showArrow)
-        <x-ri-arrow-down-s-line x-bind:class="{ '-rotate-180' : open }"
-            class="md:block hidden size-4 text-base ease-out duration-300" />
+        @if ($showArrow)
+            <x-ri-arrow-down-s-line x-bind:class="{ '-rotate-180': open }"
+                class="md:block hidden size-4 text-base ease-out duration-300" />
         @endif
-    </button>
+    </div>
 
     <div x-ref="dropdown"
-        class="absolute mt-2 {{ $width ?? "w-48" }} px-2 py-1 bg-background-secondary rounded-md shadow-lg z-10 border border-neutral"
+        class="absolute mt-2 {{ $width }} px-2 py-1 bg-background-secondary rounded-md shadow-lg z-10 border border-neutral"
         x-bind:style="{
             left: `-${adjustWidth}px`,
         }"

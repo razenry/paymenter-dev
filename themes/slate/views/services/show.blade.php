@@ -69,6 +69,12 @@
             <div>
                 <h4 class="text-lg font-semibold">{{ __('services.actions') }}:</h4>
                 <div class="mt-2 flex flex-row gap-2 flex-wrap">
+                    @if($service->status == 'active' && $service->plan->type == 'recurring')
+                        <x-button.secondary class="h-fit !w-fit" wire:click="$set('showGenerateInvoice', true)">
+                            <span wire:loading.remove wire:target="$set('showGenerateInvoice', true)">{{ __('services.generate_invoice') }}</span>
+                            <x-loading target="$set('showGenerateInvoice', true)" />
+                        </x-button.secondary>
+                    @endif
                     @if($service->upgradable)
                     <a href="{{ route('services.upgrade', $service->id) }}">
                         <x-button.primary class="h-fit !w-fit">
@@ -115,6 +121,42 @@
                                 <div class="flex gap-4">
                                     <button wire:click="$set('showCancelUpgrade', false)" @click="open = false"
                                         class="text-primary-100">
+                                        <x-ri-close-fill class="size-6" />
+                                    </button>
+                                </div>
+                            </x-slot>
+                        </x-modal>
+                    @endif
+                    @if($showGenerateInvoice)
+                        <x-modal open="true" title="{{ __('services.generate_invoice') }}" width="max-w-md">
+                            <div class="p-6">
+                                <p class="text-base/70 mb-4">{{ __('services.extend_service') }} - {{ $service->product->name }}</p>
+                                
+                                <div class="mb-4">
+                                    <label for="invoice-months" class="block text-sm font-medium mb-2">{{ __('services.select_duration') }}</label>
+                                    <select wire:model="selectedMonths" id="invoice-months" class="w-full px-4 py-2 bg-background-secondary border border-neutral rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors">
+                                        <option value="">{{ __('services.select_months') }}</option>
+                                        <option value="1">1 {{ __('services.month') }}</option>
+                                        <option value="3">3 {{ __('services.months') }}</option>
+                                        <option value="6">6 {{ __('services.months') }}</option>
+                                        <option value="9">9 {{ __('services.months') }}</option>
+                                        <option value="12">12 {{ __('services.months') }}</option>
+                                    </select>
+                                </div>
+
+                                <div class="flex gap-3">
+                                    <button wire:click="generateInvoice" class="flex-1 px-4 py-2 bg-primary hover:bg-primary/90 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!$wire.selectedMonths">
+                                        <span wire:loading.remove wire:target="generateInvoice">{{ __('services.generate') }}</span>
+                                        <span wire:loading wire:target="generateInvoice">{{ __('services.generating') }}...</span>
+                                    </button>
+                                    <button wire:click="$set('showGenerateInvoice', false)" @click="open = false" class="px-4 py-2 bg-background-secondary hover:bg-background-tertiary border border-neutral text-base rounded-lg transition-colors">
+                                        {{ __('services.cancel') }}
+                                    </button>
+                                </div>
+                            </div>
+                            <x-slot name="closeTrigger">
+                                <div class="flex gap-4">
+                                    <button wire:click="$set('showGenerateInvoice', false)" @click="open = false" class="text-primary-100">
                                         <x-ri-close-fill class="size-6" />
                                     </button>
                                 </div>

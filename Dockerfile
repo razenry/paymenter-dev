@@ -9,6 +9,9 @@ RUN apk add --no-cache --update ca-certificates dcron curl git supervisor tar un
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del autoconf make g++ gcc libc-dev
+
+# Copy custom PHP configuration to increase memory limit
+COPY .gitlab/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY composer.json composer.lock ./
