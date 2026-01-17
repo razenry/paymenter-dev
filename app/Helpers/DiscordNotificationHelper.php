@@ -166,4 +166,66 @@ class DiscordNotificationHelper
                config('settings.discord_bot_token') &&
                config('settings.discord_notifications_enabled');
     }
+    /**
+     * Get Guild ID from Invite URL
+     */
+    public static function getGuildIdFromInvite(string $inviteUrl): ?string
+    {
+        if (preg_match('/(?:discord\.gg|discord\.com\/invite)\/([a-zA-Z0-9-]+)/', $inviteUrl, $matches)) {
+            $code = $matches[1];
+        } else {
+            $code = basename(parse_url($inviteUrl, PHP_URL_PATH));
+        }
+
+        if (empty($code)) {
+            return null;
+        }
+
+        return Cache::remember('discord_invite_guild_' . $code, 3600, function () use ($code) {
+            $response = Http::get("https://discord.com/api/v10/invites/{$code}");
+            if ($response->successful()) {
+                return $response->json()['guild']['id'] ?? null;
+            }
+            return null;
+        });
+    }
+
+    /**
+     * Check if user is in guild
+     */
+    public static function isUserInGuild(string $userId, string $guildId): bool
+    {
+        if (!config('settings.discord_bot_token')) {
+            return false;
+        }
+
+        $botToken = config('settings.discord_bot_token');
+        $response = Http::withHeaders([
+            'Authorization' => "Bot {$botToken}",
+        ])->get("https://discord.com/api/v10/guilds/{$guildId}/members/{$userId}");
+
+        return $response->successful();
+    }
+
+    /**
+     * Check if DM is accessible (by trying to open a channel)
+     */
+    public static function isDmAccessible(User $user): bool
+    {
+        if (!$user->discord_user_id || !config('settings.discord_bot_token')) {
+            return false;
+        }
+
+        $botToken = config('settings.discord_bot_token');
+        
+        // Try creating a DM channel
+        $response = Http::withHeaders([
+            'Authorization' => "Bot {$botToken}",
+            'Content-Type' => 'application/json',
+        ])->post('https://discord.com/api/v10/users/@me/channels', [
+            'recipient_id' => $user->discord_user_id,
+        ]);
+
+        return $response->successful();
+    }
 }

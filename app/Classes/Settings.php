@@ -229,6 +229,13 @@ class Settings
                     'required' => false,
                 ],
                 [
+                    'name' => 'discord_invite_url',
+                    'label' => 'Discord Invite URL',
+                    'description' => 'Invite URL for your Discord server',
+                    'type' => 'text',
+                    'required' => false,
+                ],
+                [
                     'name' => 'discord_notifications_enabled',
                     'label' => 'Discord Notifications Enabled',
                     'description' => 'Enable Discord notifications for users',

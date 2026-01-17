@@ -7,6 +7,8 @@ use App\Livewire\Component;
 use App\Models\NotificationTemplate;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
+use App\Helpers\DiscordNotificationHelper;
 use Livewire\Attributes\Computed;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
@@ -14,6 +16,72 @@ use Minishlink\WebPush\WebPush;
 class Notifications extends Component
 {
     public $preferences = [];
+
+    public function testDiscordNotification()
+    {
+        $user = Auth::user();
+
+        if (!$user->discord_user_id) {
+            $this->notify('You must be connected to Discord to send a test notification.', 'error');
+            return;
+        }
+
+        try {
+            $success = DiscordNotificationHelper::sendNotification(
+                $user,
+                'This is a test notification from ' . config('app.name'),
+                'Test Notification',
+                [['name' => 'Status', 'value' => 'Success', 'inline' => true]]
+            );
+
+            if ($success) {
+                $this->notify('Test notification sent successfully!', 'success');
+                // Clear cache so the setup box disappears if it was due to DM closed
+                Cache::forget('discord_setup_complete_' . $user->id);
+            } else {
+                $this->notify('Failed to send test notification. Please make sure your DMs are open.', 'error');
+            }
+        } catch (\Exception $e) {
+            $this->notify('Error sending notification: ' . $e->getMessage(), 'error');
+        }
+    }
+
+    #[Computed]
+    public function discordInviteUrl()
+    {
+        return config('settings.discord_invite_url');
+    }
+
+    #[Computed]
+    public function isDiscordSetupComplete()
+    {
+        if (!$this->discordInviteUrl) {
+            return true;
+        }
+
+        $user = Auth::user();
+        if (!$user->discord_user_id) {
+            return false;
+        }
+
+        return Cache::remember('discord_setup_complete_' . $user->id . '_' . md5($this->discordInviteUrl), 300, function () use ($user) {
+            $guildId = DiscordNotificationHelper::getGuildIdFromInvite($this->discordInviteUrl);
+            
+            if (!$guildId) {
+                // Could not resolve guild ID, so we can't check membership.
+                // Should we assume complete or incomplete?
+                // If invite is invalid, maybe we shouldn't block? 
+                // But safety first: incomplete.
+                return false;
+            }
+
+            if (!DiscordNotificationHelper::isUserInGuild($user->discord_user_id, $guildId)) {
+                return false;
+            }
+
+            return DiscordNotificationHelper::isDmAccessible($user);
+        });
+    }
 
     public function mount()
     {

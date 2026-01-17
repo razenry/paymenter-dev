@@ -106,6 +106,38 @@
                     <x-ri-discord-fill class="size-5 text-primary-400" />
                     <span class="text-sm text-primary-400">{{ __('account.discord_connected_description') }}</span>
                 </div>
+
+                @if ($this->discordInviteUrl && !$this->isDiscordSetupComplete)
+                    <div class="mt-6 border-t border-neutral/10 pt-6">
+                        <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center p-4 rounded-xl bg-primary-800/50 border border-primary-200/10">
+                            <div class="flex gap-3">
+                                <div class="p-2 rounded-lg bg-primary-700/30 h-fit">
+                                    <x-ri-information-line class="size-5 text-primary-400" />
+                                </div>
+                                <div>
+                                    <h3 class="text-sm font-medium text-primary-100">Setup Required</h3>
+                                    <p class="text-sm text-primary-400 mt-1 max-w-lg">
+                                        To receive notifications, you must join our Discord server and ensure your direct messages are open.
+                                    </p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                                <a href="{{ $this->discordInviteUrl }}" target="_blank"
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-all shadow-lg shadow-[#5865F2]/20 hover:shadow-[#5865F2]/40">
+                                    <x-ri-discord-fill class="size-4 mr-2" />
+                                    Join Server
+                                </a>
+                                <button type="button" wire:click="testDiscordNotification" wire:loading.attr="disabled"
+                                    class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-200 bg-transparent hover:bg-neutral/10 border border-neutral/20 rounded-lg transition-colors">
+                                    <x-loading wire:loading wire:target="testDiscordNotification" class="mr-2" />
+                                    <x-ri-notification-line wire:loading.remove wire:target="testDiscordNotification" class="size-4 mr-2" />
+                                    Test
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
                 <x-button.secondary class="w-full mt-4" x-on:click="$store.confirmation.confirm({
                     title: '{{ __('account.discord_disconnect') }}',
                     message: '{{ __('account.discord_disconnect_description') }}',
