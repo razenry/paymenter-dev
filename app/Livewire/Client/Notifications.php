@@ -12,6 +12,7 @@ use App\Helpers\DiscordNotificationHelper;
 use Livewire\Attributes\Computed;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
+use Illuminate\Support\Facades\RateLimiter;
 
 class Notifications extends Component
 {
@@ -26,6 +27,14 @@ class Notifications extends Component
             return;
         }
 
+        $key = 'discord-test-notification:' . $user->id;
+
+        if (RateLimiter::tooManyAttempts($key, 1)) {
+            $seconds = RateLimiter::availableIn($key);
+            $this->notify('Too many requests. Please wait ' . $seconds . ' seconds before trying again.', 'error');
+            return;
+        }
+
         try {
             $success = DiscordNotificationHelper::sendNotification(
                 $user,
@@ -35,9 +44,8 @@ class Notifications extends Component
             );
 
             if ($success) {
+                RateLimiter::hit($key, 60);
                 $this->notify('Test notification sent successfully!', 'success');
-                // Clear cache so the setup box disappears if it was due to DM closed
-                Cache::forget('discord_setup_complete_' . $user->id);
             } else {
                 $this->notify('Failed to send test notification. Please make sure your DMs are open.', 'error');
             }
@@ -52,36 +60,7 @@ class Notifications extends Component
         return config('settings.discord_invite_url');
     }
 
-    #[Computed]
-    public function isDiscordSetupComplete()
-    {
-        if (!$this->discordInviteUrl) {
-            return true;
-        }
 
-        $user = Auth::user();
-        if (!$user->discord_user_id) {
-            return false;
-        }
-
-        return Cache::remember('discord_setup_complete_' . $user->id . '_' . md5($this->discordInviteUrl), 300, function () use ($user) {
-            $guildId = DiscordNotificationHelper::getGuildIdFromInvite($this->discordInviteUrl);
-            
-            if (!$guildId) {
-                // Could not resolve guild ID, so we can't check membership.
-                // Should we assume complete or incomplete?
-                // If invite is invalid, maybe we shouldn't block? 
-                // But safety first: incomplete.
-                return false;
-            }
-
-            if (!DiscordNotificationHelper::isUserInGuild($user->discord_user_id, $guildId)) {
-                return false;
-            }
-
-            return DiscordNotificationHelper::isDmAccessible($user);
-        });
-    }
 
     public function mount()
     {

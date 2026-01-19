@@ -99,61 +99,67 @@
         <!-- Configure Discord connection -->
         @if($this->discordNotificationsEnabled)
         <div class="bg-background-secondary rounded-lg p-4 mb-6">
-            <h2 class="text-lg font-medium text-primary mb-2">{{ __('account.discord_connection') }}</h2>
-            @if($this->discordConnected())
-                <p class="text-sm text-primary-100">{{ __('account.discord_connected') }}</p>
-                <div class="flex items-center gap-2 mt-2">
-                    <x-ri-discord-fill class="size-5 text-primary-400" />
-                    <span class="text-sm text-primary-400">{{ __('account.discord_connected_description') }}</span>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                <div>
+                    <h2 class="text-lg font-medium text-primary mb-1">{{ __('account.discord_connection') }}</h2>
+                    @if($this->discordConnected())
+                        <div class="flex items-center gap-2">
+                            <x-ri-discord-fill class="size-5 text-[#5865F2]" />
+                            <span class="text-sm text-primary-100">{{ __('account.discord_connected') }}</span>
+                            <span class="text-sm text-primary-400">• {{ __('account.discord_connected_description') }}</span>
+                        </div>
+                    @else
+                        <p class="text-base/70">{{ __('account.discord_connection_description') }}</p>
+                    @endif
                 </div>
 
-                @if ($this->discordInviteUrl && !$this->isDiscordSetupComplete)
-                    <div class="mt-6 border-t border-neutral/10 pt-6">
-                        <div class="flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center p-4 rounded-xl bg-primary-800/50 border border-primary-200/10">
-                            <div class="flex gap-3">
-                                <div class="p-2 rounded-lg bg-primary-700/30 h-fit">
-                                    <x-ri-information-line class="size-5 text-primary-400" />
-                                </div>
-                                <div>
-                                    <h3 class="text-sm font-medium text-primary-100">Setup Required</h3>
-                                    <p class="text-sm text-primary-400 mt-1 max-w-lg">
-                                        To receive notifications, you must join our Discord server and ensure your direct messages are open.
-                                    </p>
-                                </div>
+                @if($this->discordConnected())
+                    <x-button.danger type="button" class="w-full sm:w-auto" x-on:click="$store.confirmation.confirm({
+                        title: '{{ __('account.discord_disconnect') }}',
+                        message: '{{ __('account.discord_disconnect_description') }}',
+                        confirmText: '{{ __('account.confirm') }}',
+                        cancelText: '{{ __('account.cancel') }}',
+                        callback: () => $wire.disconnectDiscord()
+                    })">
+                        {{ __('account.discord_disconnect') }}
+                    </x-button.danger>
+                @else
+                    <a href="{{ route('oauth.link', 'discord') }}" class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-colors shadow-lg shadow-[#5865F2]/20">
+                        <x-ri-discord-fill class="size-5 mr-2" />
+                        {{ __('account.connect_discord') }}
+                    </a>
+                @endif
+            </div>
+
+            @if($this->discordConnected() && $this->discordInviteUrl)
+                <div class="mt-6 border-t border-neutral/10 pt-6">
+                    <div class="flex flex-col gap-4 p-4 rounded-xl bg-primary-800/50 border border-primary-200/10">
+                        <div class="flex gap-3">
+                            <div class="p-2 rounded-lg bg-primary-700/30 h-fit">
+                                <x-ri-information-line class="size-5 text-primary-400" />
                             </div>
-                            <div class="flex items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
-                                <a href="{{ $this->discordInviteUrl }}" target="_blank"
-                                    class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-all shadow-lg shadow-[#5865F2]/20 hover:shadow-[#5865F2]/40">
-                                    <x-ri-discord-fill class="size-4 mr-2" />
-                                    Join Server
-                                </a>
-                                <button type="button" wire:click="testDiscordNotification" wire:loading.attr="disabled"
-                                    class="flex-1 sm:flex-none inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-primary-200 bg-transparent hover:bg-neutral/10 border border-neutral/20 rounded-lg transition-colors">
-                                    <x-loading wire:loading wire:target="testDiscordNotification" class="mr-2" />
-                                    <x-ri-notification-line wire:loading.remove wire:target="testDiscordNotification" class="size-4 mr-2" />
-                                    Test
-                                </button>
+                            <div>
+                                <h3 class="text-sm font-medium text-primary-100">Setup Notice</h3>
+                                <p class="text-sm text-primary-400 mt-1">
+                                    To receive notifications, you must join our Discord server and ensure your direct messages are open.
+                                </p>
                             </div>
                         </div>
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+                            <a href="{{ $this->discordInviteUrl }}" target="_blank"
+                                class="inline-flex items-center justify-center px-6 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-all shadow-lg shadow-[#5865F2]/20 hover:shadow-[#5865F2]/40 whitespace-nowrap">
+                                <x-ri-discord-fill class="size-4 mr-2" />
+                                Join Server
+                            </a>
+                            <button type="button" wire:click="testDiscordNotification" wire:loading.attr="disabled"
+                                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors shadow-lg shadow-blue-600/20 hover:shadow-blue-600/40 whitespace-nowrap">
+                                <x-loading wire:loading wire:target="testDiscordNotification" class="mr-2" />
+                                <x-ri-notification-line wire:loading.remove wire:target="testDiscordNotification" class="size-4 mr-2" />
+                                Test
+                            </button>
+                        </div>
                     </div>
-                @endif
-
-
-                <x-button.secondary class="w-full mt-4" x-on:click="$store.confirmation.confirm({
-                    title: '{{ __('account.discord_disconnect') }}',
-                    message: '{{ __('account.discord_disconnect_description') }}',
-                    confirmText: '{{ __('account.confirm') }}',
-                    cancelText: '{{ __('account.cancel') }}',
-                    callback: () => $wire.disconnectDiscord()
-                })">
-                    {{ __('account.discord_disconnect') }}
-                </x-button.secondary>
-            @else
-                <p class="text-base/70 mb-4">{{ __('account.discord_connection_description') }}</p>
-                <a href="{{ route('oauth.link', 'discord') }}" class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-[#5865F2] hover:bg-[#4752C4] rounded-lg transition-colors">
-                    <x-ri-discord-fill class="size-5 mr-2" />
-                    {{ __('account.connect_discord') }}
-                </a>
+                </div>
             @endif
         </div>
         @endif
