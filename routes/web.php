@@ -17,8 +17,6 @@ use Illuminate\Support\Facades\Route;
 
 Route::get('/', Home::class)->name('home');
 
-// Destroy the session and log out the user.
-// auth()->logout();
 // Authorization routes
 Route::group(['middleware' => ['web', 'guest']], function () {
     Route::get('/login', Auth\Login::class)->name('login');
@@ -27,7 +25,10 @@ Route::group(['middleware' => ['web', 'guest']], function () {
     // Todo
     Route::get('/password/request', Auth\Password\Request::class)->name('password.request');
     Route::get('/password/reset/{token}', Auth\Password\Reset::class)->name('password.reset');
+});
 
+Route::group(['middleware' => ['web']], function () {
+    Route::get('/oauth/link/{provider}', [SocialLoginController::class, 'link'])->name('oauth.link');
     Route::get('/oauth/{provider}', [SocialLoginController::class, 'redirect'])->name('oauth.redirect');
     Route::get('/oauth/{provider}/callback', [SocialLoginController::class, 'handle'])->name('oauth.handle');
 });

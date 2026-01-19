@@ -19,7 +19,7 @@ class Cart
             return new \App\Models\Cart;
         }
 
-        return $cart->load('items.plan', 'items.product', 'items.product.configOptions.children.plans.prices');
+        return $cart->load('currency', 'items.plan', 'items.product', 'items.product.configOptions.children.plans.prices');
     }
 
     public static function get()
@@ -43,12 +43,19 @@ class Cart
     public static function createCart()
     {
         $cart = self::getOnce();
+        $currentCurrency = session('currency', session('currency', config('settings.default_currency')));
+
         if (!$cart->exists) {
             $cart->user_id = Auth::id();
-            $cart->currency_code = session('currency', session('currency', config('settings.default_currency')));
+            $cart->currency_code = $currentCurrency;
             $cart->save();
             Cookie::queue('cart', $cart->ulid, 60 * 24 * 30); // 30 days
             $cart = \App\Models\Cart::find($cart->id);
+        } elseif ($cart->currency_code !== $currentCurrency) {
+            // Update currency if session currency changed
+            // This ensures cart always matches session currency
+            $cart->currency_code = $currentCurrency;
+            $cart->save();
         }
 
         return $cart;

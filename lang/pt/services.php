@@ -66,4 +66,13 @@ return [
 
     'remove_payment_method' => 'Remover Método de Pagamento',
     'remove_payment_method_confirm' => 'Tem certeza que deseja remover o método de pagamento ":name" deste serviço? Seu serviço não será mais capaz de pagar automaticamente as suas faturas.',
+    // Added missing keys for cancel upgrade modal
+    'cancel_upgrade_confirmation' => 'Are you sure you want to cancel the pending upgrade from :from to :to?',
+    'yes_cancel_upgrade' => 'Yes, cancel upgrade',
+    'cancel_upgrade' => 'Cancel Upgrade',
+    'close' => 'Close',
+    'generate_invoice' => 'Gerar Fatura',
+    'extend_service' => 'Estender Serviço',
+    'month' => 'Mês',
+    'months' => 'Meses',
 ];

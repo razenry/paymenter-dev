@@ -71,4 +71,12 @@ return [
     'yes_cancel_upgrade' => 'Yes, cancel upgrade',
     'cancel_upgrade' => 'Cancel Upgrade',
     'close' => 'Close',
+    'generate_invoice' => 'Generate Invoice',
+    'extend_service' => 'Extend Service',
+    'month' => 'Month',
+    'months' => 'Months',
+    'select_duration' => 'Select Duration',
+    'select_months' => 'Select number of months',
+    'generate' => 'Generate Invoice',
+    'generating' => 'Generating',
 ];

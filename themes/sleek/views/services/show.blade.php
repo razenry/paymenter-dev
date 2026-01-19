@@ -108,6 +108,13 @@
                     <h2 class="text-lg font-semibold mb-4">{{ __('services.actions') }}</h2>
 
                     <div class="flex flex-wrap gap-3 mb-4">
+                        @if ($service->status == 'active' && $service->plan->type == 'recurring')
+                            <x-button.secondary wire:click="$set('showGenerateInvoice', true)" class="flex items-center gap-2">
+                                <span wire:loading.remove wire:target="$set('showGenerateInvoice', true)">{{ __('services.generate_invoice') }}</span>
+                                <x-loading target="$set('showGenerateInvoice', true)" />
+                            </x-button.secondary>
+                        @endif
+
                         @if ($service->upgradable)
                             <a href="{{ route('services.upgrade', $service->id) }}">
                                 <x-button.primary class="flex items-center gap-2">
@@ -183,6 +190,36 @@
             <livewire:services.cancel-upgrade :service="$service" />
             <x-slot name="closeTrigger">
                 <button wire:click="$set('showCancelUpgrade', false)" @click="open = false" class="text-primary-100">
+                    <x-ri-close-fill class="size-6" />
+                </button>
+            </x-slot>
+        </x-modal>
+    @endif
+
+    @if($showGenerateInvoice)
+        <x-modal open="true" title="{{ __('services.generate_invoice') }}" width="max-w-md">
+            <div class="p-6">
+                <p class="text-base/70 mb-6">{{ __('services.extend_service') }} - {{ $service->product->name }}</p>
+                <div class="grid grid-cols-2 gap-3">
+                    <button wire:click="generateInvoice(1)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
+                        1 {{ __('services.month') }}
+                    </button>
+                    <button wire:click="generateInvoice(3)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
+                        3 {{ __('services.months') }}
+                    </button>
+                    <button wire:click="generateInvoice(6)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
+                        6 {{ __('services.months') }}
+                    </button>
+                    <button wire:click="generateInvoice(9)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
+                        9 {{ __('services.months') }}
+                    </button>
+                    <button wire:click="generateInvoice(12)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors col-span-2">
+                        12 {{ __('services.months') }}
+                    </button>
+                </div>
+            </div>
+            <x-slot name="closeTrigger">
+                <button wire:click="$set('showGenerateInvoice', false)" @click="open = false" class="text-base/70 hover:text-base transition-colors duration-200">
                     <x-ri-close-fill class="size-6" />
                 </button>
             </x-slot>

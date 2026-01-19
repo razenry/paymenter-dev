@@ -66,4 +66,13 @@ return [
 
     'remove_payment_method' => 'Remove Payment Method',
     'remove_payment_method_confirm' => 'Are you sure you want to remove the payment method ":name" from this service? Your service will no longer be able to auto pay its invoices.',
+    // Added missing keys for cancel upgrade modal
+    'cancel_upgrade_confirmation' => 'Are you sure you want to cancel the pending upgrade from :from to :to?',
+    'yes_cancel_upgrade' => 'Yes, cancel upgrade',
+    'cancel_upgrade' => 'Cancel Upgrade',
+    'close' => 'Close',
+    'generate_invoice' => 'Hasilkan Faktur',
+    'extend_service' => 'Perpanjang Layanan',
+    'month' => 'Bulan',
+    'months' => 'Bulan',
 ];

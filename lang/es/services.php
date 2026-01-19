@@ -66,4 +66,8 @@ return [
 
     'remove_payment_method' => 'Remove Payment Method',
     'remove_payment_method_confirm' => 'Are you sure you want to remove the payment method ":name" from this service? Your service will no longer be able to auto pay its invoices.',
+    'generate_invoice' => 'Generar Factura',
+    'extend_service' => 'Extender Servicio',
+    'month' => 'Mes',
+    'months' => 'Meses',
 ];

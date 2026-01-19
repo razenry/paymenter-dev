@@ -7,6 +7,7 @@ use App\Admin\Resources\CurrencyResource\Pages\EditCurrency;
 use App\Admin\Resources\CurrencyResource\Pages\ListCurrencies;
 use App\Models\Currency;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Forms\Components\Select;
@@ -85,6 +86,8 @@ class CurrencyResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                DeleteAction::make()
+                    ->hidden(fn ($record) => config('settings.default_currency') == $record->code),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

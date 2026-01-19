@@ -23,7 +23,7 @@ class InvoicePaidListener
                 if (!$service || !($service instanceof Service)) {
                     return;
                 }
-                (new RenewServiceService)->handle($service);
+                (new RenewServiceService)->handle($service, $item->quantity);
             } elseif ($item->reference_type == ServiceUpgrade::class) {
                 $serviceUpgrade = $item->reference;
                 if (!$serviceUpgrade || $serviceUpgrade->status !== ServiceUpgrade::STATUS_PENDING || !($serviceUpgrade instanceof ServiceUpgrade)) {

@@ -45,7 +45,11 @@ class Cart extends Component
             return;
         }
 
-        $this->total = new Price(['price' => ClassesCart::items()->sum(fn ($item) => $item->price->total * $item->quantity), 'currency' => ClassesCart::get()->currency]);
+        // Sum the pre-tax subtotals of all items
+        $preTaxTotal = ClassesCart::items()->sum(fn ($item) => $item->price->subtotal * $item->quantity);
+        // Use session currency for consistency
+        $currency = \App\Models\Currency::find(session('currency', config('settings.default_currency')));
+        $this->total = new Price(['price' => $preTaxTotal, 'currency' => $currency]);
         $this->gateways = ExtensionHelper::getCheckoutGateways($this->total->total, $this->total->currency->code, 'cart', ClassesCart::items());
         if (count($this->gateways) > 0 && !array_search($this->gateway, array_column($this->gateways, 'id')) !== false) {
             $this->gateway = $this->gateways[0]->id;
@@ -162,7 +166,7 @@ class Cart extends Component
             // Create the order
             $order = new Order([
                 'user_id' => $user->id,
-                'currency_code' => $cart->currency_code,
+                'currency_code' => $cart->currency_code ?: session('currency', config('settings.default_currency')),
             ]);
             $order->save();
 
@@ -171,7 +175,7 @@ class Cart extends Component
                 $invoice = new Invoice([
                     'user_id' => $user->id,
                     'due_at' => now()->addDays(7),
-                    'currency_code' => $cart->currency_code,
+                    'currency_code' => $cart->currency_code ?: session('currency', config('settings.default_currency')),
                 ]);
                 $invoice->save();
             }
@@ -195,7 +199,7 @@ class Cart extends Component
                 // Create the service
                 $service = $order->services()->create([
                     'user_id' => $user->id,
-                    'currency_code' => $cart->currency_code,
+                    'currency_code' => $cart->currency_code ?: session('currency', config('settings.default_currency')),
                     'product_id' => $item->product->id,
                     'plan_id' => $item->plan->id,
                     'price' => $price,

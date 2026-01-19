@@ -110,6 +110,24 @@ class NotificationTemplateResource extends Resource
                             ->columnSpanFull(),
                     ]),
 
+                Section::make('Discord Notification')
+                    ->description('Configure Discord DM notifications for this template.')
+                    ->columns(1)
+                    ->columnSpanFull()
+                    ->collapsible()
+                    ->schema([
+                        Select::make('discord_enabled')
+                            ->label('Discord Enabled')
+                            ->options([
+                                NotificationEnabledStatus::ChoiceOn->value => 'User Choice, Default On',
+                                NotificationEnabledStatus::ChoiceOff->value => 'User Choice, Default Off',
+                                NotificationEnabledStatus::Force->value => 'Force On',
+                                NotificationEnabledStatus::Never->value => 'Force Off',
+                            ])
+                            ->default(NotificationEnabledStatus::ChoiceOn->value)
+                            ->required(),
+                    ]),
+
             ]);
     }
 

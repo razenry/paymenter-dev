@@ -66,4 +66,13 @@ return [
 
     'remove_payment_method' => 'Ukloni način plaćanja',
     'remove_payment_method_confirm' => 'Da li ste sigurni da želite da uklonite način plaćanja ":name" sa ove usluge? Vaša usluga više neće moći da automatski plaća svoje račune.',
+    // Added missing keys for cancel upgrade modal
+    'cancel_upgrade_confirmation' => 'Are you sure you want to cancel the pending upgrade from :from to :to?',
+    'yes_cancel_upgrade' => 'Yes, cancel upgrade',
+    'cancel_upgrade' => 'Cancel Upgrade',
+    'close' => 'Close',
+    'generate_invoice' => 'Generate Invoice',
+    'extend_service' => 'Extend Service',
+    'month' => 'Month',
+    'months' => 'Months',
 ];

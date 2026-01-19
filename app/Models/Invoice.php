@@ -168,4 +168,16 @@ class Invoice extends Model implements Auditable
             get: fn () => PDF::generateInvoice($this)
         );
     }
+
+    /**
+     * Check if this invoice is a service extension invoice.
+     * Service extension invoices are created from the "generate invoice" button on services.
+     */
+    public function isServiceExtensionInvoice(): bool
+    {
+        return $this->items()
+            ->where('reference_type', Service::class)
+            ->whereRaw("description LIKE '%- Extension%'")
+            ->exists();
+    }
 }

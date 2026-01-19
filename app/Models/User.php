@@ -37,6 +37,7 @@ class User extends Authenticatable implements Auditable, FilamentUser, HasAvatar
         'role_id',
         'tfa_secret',
         'email_verified_at',
+        'discord_user_id',
     ];
 
     /**

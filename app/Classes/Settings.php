@@ -221,6 +221,29 @@ class Settings
                     'type' => 'text',
                     'required' => false,
                 ],
+                [
+                    'name' => 'discord_bot_token',
+                    'label' => 'Discord Bot Token',
+                    'description' => 'Bot token for sending Discord notifications',
+                    'type' => 'text',
+                    'required' => false,
+                ],
+                [
+                    'name' => 'discord_invite_url',
+                    'label' => 'Discord Invite URL',
+                    'description' => 'Invite URL for your Discord server',
+                    'type' => 'text',
+                    'required' => false,
+                ],
+                [
+                    'name' => 'discord_notifications_enabled',
+                    'label' => 'Discord Notifications Enabled',
+                    'description' => 'Enable Discord notifications for users',
+                    'type' => 'checkbox',
+                    'database_type' => 'boolean',
+                    'default' => false,
+                    'required' => false,
+                ],
             ],
             'tax' => [
                 [

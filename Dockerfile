@@ -1,6 +1,6 @@
 # Stage 1:
 # Build the actual container with all of the needed PHP dependencies that will run the application.
-FROM --platform=$TARGETOS/$TARGETARCH php:8.3-fpm-alpine AS final
+FROM --platform=$TARGETOS/$TARGETARCH php:8.4-fpm-alpine AS final
 WORKDIR /app
 
 RUN apk add --no-cache --update ca-certificates dcron curl git supervisor tar unzip nginx libpng-dev libxml2-dev libzip-dev icu-dev autoconf make g++ gcc libc-dev linux-headers gmp-dev \
@@ -9,6 +9,9 @@ RUN apk add --no-cache --update ca-certificates dcron curl git supervisor tar un
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del autoconf make g++ gcc libc-dev
+
+# Copy custom PHP configuration to increase memory limit
+COPY .gitlab/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
 COPY composer.json composer.lock ./

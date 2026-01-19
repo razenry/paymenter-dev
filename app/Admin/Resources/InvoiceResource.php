@@ -84,6 +84,8 @@ class InvoiceResource extends Resource
                     ->label('Currency')
                     ->required()
                     ->relationship('currency', 'code')
+                    ->searchable()
+                    ->preload()
                     ->placeholder('Select the currency'),
                 Toggle::make('send_email')
                     ->label('Send Email')
