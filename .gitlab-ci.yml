@@ -24,4 +24,5 @@ build_image:
     - docker push $IMAGE_NAME
   only:
     - dev
+    - main
     - tags
