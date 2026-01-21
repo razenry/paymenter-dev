@@ -12,8 +12,6 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Exception;
 
 class SyncConfigJob implements ShouldQueue
 {
@@ -23,38 +21,78 @@ class SyncConfigJob implements ShouldQueue
     {
         logger()->info('Starting service sync...');
 
-        $configOptions = ConfigOption::all();
-        $configOptionProducts = ConfigOptionProduct::all();
-        $services = Service::all();
-        $existingConfigs = ServiceConfig::all();
-        logger()->info("Syncing " . $services->count() . " services.");
-        foreach ($services as $service) {
-            $relatedProducts = $configOptionProducts->where('product_id', $service->product_id);
-            $relatedConfigIds = $relatedProducts->pluck('config_option_id');
-            $relatedConfigs = $configOptions->whereNull('parent_id')->whereIn('id', $relatedConfigIds);
+        try {
+            $configOptions = ConfigOption::all();
+            $configOptionProducts = ConfigOptionProduct::all();
 
-            foreach ($relatedConfigs as $config) {
-                $childConfig = $configOptions->firstWhere('parent_id', $config->id);
-                if (!$childConfig)
-                    continue;
+            $chunkSize = 50;
 
-                $alreadyExists = $existingConfigs
-                    ->where('config_option_id', $config->id)
-                    ->where('configurable_id', $service->id)
-                    ->isNotEmpty();
+            $totalServices = Service::where('status', Service::STATUS_ACTIVE)->count();
+            $totalChunks = (int) ceil($totalServices / $chunkSize);
 
-                if ($alreadyExists)
-                    continue;
+            logger()->info('Service config sync initialized', [
+                'job' => static::class,
+                'total_services' => $totalServices,
+                'chunk_size' => $chunkSize,
+                'total_chunks' => $totalChunks,
+            ]);
 
-                DB::table('service_configs')->insert([
-                    'configurable_type' => Service::class,
-                    'configurable_id' => $service->id,
-                    'config_option_id' => $config->id,
-                    'config_value_id' => $childConfig->id,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            }
+            Service::where('status', Service::STATUS_ACTIVE)
+                ->chunkById($chunkSize, function ($services) use ($configOptions, $configOptionProducts) {
+
+                    try {
+                        $existingConfigs = ServiceConfig::whereIn(
+                            'configurable_id',
+                            $services->pluck('id')
+                        )->get();
+
+                        logger()->info("Syncing {$services->count()} services.");
+
+                        foreach ($services as $service) {
+                            $relatedProducts = $configOptionProducts->where('product_id', $service->product_id);
+                            $relatedConfigIds = $relatedProducts->pluck('config_option_id');
+
+                            $relatedConfigs = $configOptions
+                                ->whereNull('parent_id')
+                                ->whereIn('id', $relatedConfigIds);
+
+                            foreach ($relatedConfigs as $config) {
+                                $childConfig = $configOptions->firstWhere('parent_id', $config->id);
+                                if (!$childConfig) {
+                                    continue;
+                                }
+
+                                $alreadyExists = $existingConfigs
+                                    ->where('config_option_id', $config->id)
+                                    ->where('configurable_id', $service->id)
+                                    ->isNotEmpty();
+
+                                if ($alreadyExists) {
+                                    continue;
+                                }
+
+                                DB::table('service_configs')->insert([
+                                    'configurable_type' => Service::class,
+                                    'configurable_id' => $service->id,
+                                    'config_option_id' => $config->id,
+                                    'config_value_id' => $childConfig->id,
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]);
+                            }
+                        }
+                    } catch (\Throwable $e) {
+                        logger()->error('Service sync chunk failed', [
+                            'exception' => $e,
+                            'service_ids' => $services->pluck('id')->all(),
+                        ]);
+                    }
+                });
+
+        } catch (\Throwable $e) {
+            logger()->error('Service sync failed to start', [
+                'exception' => $e,
+            ]);
         }
 
         logger()->info('Service sync completed.');

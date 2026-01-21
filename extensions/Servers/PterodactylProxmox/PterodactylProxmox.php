@@ -60,7 +60,9 @@ class PterodactylProxmox extends Server
         ])->$method($req_url, $data);
 
         if (!$response->successful()) {
-            throw new Exception($response->json()['errors'][0]['detail']);
+            $body = $response->json();
+            logger()->error('[pterodactyl] failed to execute api call', $body['errors']);
+            throw new Exception($body['errors'][0]['detail']);
         }
 
         return $response->json() ?? [];
@@ -426,13 +428,15 @@ class PterodactylProxmox extends Server
 
     public function terminateServer(Service $service, $settings, $properties)
     {
-        $server = $this->getServer($service->id);
-
-        $this->request('/api/application/private-servers/' . $server, 'delete');
+        $server = $this->getServer($service->id, failIfNotFound: false);
+        if(!$server) {
+            return true;
+        }
+        
+        $this->request('/api/application/servers/' . $server, 'delete');
 
         return true;
     }
-
     public function upgradeServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, raw: true);

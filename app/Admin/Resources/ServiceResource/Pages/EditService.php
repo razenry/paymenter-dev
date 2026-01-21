@@ -7,6 +7,7 @@ use App\Admin\Resources\ServiceResource;
 use App\Admin\Resources\ServiceUpgradeResource;
 use App\Helpers\ExtensionHelper;
 use App\Helpers\NotificationHelper;
+use App\Jobs\Services\SyncServerConfigJob;
 use App\Models\Service;
 use App\Models\ServiceUpgrade;
 use Exception;
@@ -65,6 +66,34 @@ class EditService extends EditRecord
                     return $pendingUpgrade
                         ? ServiceUpgradeResource::getUrl('edit', ['record' => $pendingUpgrade->id])
                         : ServiceUpgradeResource::getUrl('create', ['data' => ['service_id' => $record->id]]);
+                }),
+            Action::make('syncConfigs')
+                ->label('Sync Configs')
+                ->icon('heroicon-o-arrow-path')
+                ->requiresConfirmation()
+                ->modalHeading('Sync Service Configs')
+                ->modalDescription('This will sync configuration options for this service only.')
+                ->action(function (Service $record, Action $action): void {
+                    try {
+                        SyncServerConfigJob::dispatch($record->id);
+
+                        Notification::make()
+                            ->title('Config sync queued')
+                            ->body('Service configuration sync has been queued.')
+                            ->success()
+                            ->send();
+
+                    } catch (Exception $e) {
+                        report($e);
+
+                        Notification::make()
+                            ->title('Failed to sync configs')
+                            ->body($e->getMessage())
+                            ->danger()
+                            ->send();
+
+                        $action->halt();
+                    }
                 }),
             Action::make('changeStatus')
                 ->label('Trigger Extension Action')

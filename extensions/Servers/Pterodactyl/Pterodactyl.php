@@ -60,7 +60,9 @@ class Pterodactyl extends Server
         ])->$method($req_url, $data);
 
         if (!$response->successful()) {
-            throw new Exception($response->json()['errors'][0]['detail']);
+            $body = $response->json();
+            logger()->error('[pterodactyl] failed to execute api call', $body['errors']);
+            throw new Exception($body['errors'][0]['detail']);
         }
 
         return $response->json() ?? [];
@@ -384,7 +386,17 @@ class Pterodactyl extends Server
             $serverCreationData['allocation'] = $deploymentData['allocation'];
         }
 
-        $server = $this->request('/api/application/servers', 'post', $serverCreationData);
+        try {
+            $server = $this->request('/api/application/servers', 'post', $serverCreationData);
+        } catch (\Throwable $e) {
+            logger()->error('Failed to create server via Pterodactyl API', [
+                'service_id' => $service->id,
+                'payload' => $serverCreationData,
+                'error' => $e->getMessage(),
+            ]);
+
+            throw new Exception('Server creation failed', 0, $e);
+        }
 
         return [
             'server' => $server['attributes']['id'],
@@ -660,8 +672,11 @@ class Pterodactyl extends Server
 
     public function terminateServer(Service $service, $settings, $properties)
     {
-        $server = $this->getServer($service->id);
-
+        $server = $this->getServer($service->id, failIfNotFound: false);
+        if(!$server) {
+            return true;
+        }
+        
         $this->request('/api/application/servers/' . $server, 'delete');
 
         return true;
