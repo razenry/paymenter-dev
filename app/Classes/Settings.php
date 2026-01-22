@@ -230,7 +230,7 @@ class Settings
                 ],
                 [
                     'name' => 'discord_invite_url',
-                    'label' => 'Discord Invite URL',
+                    'label' => 'Discord Server Invite URL',
                     'description' => 'Invite URL for your Discord server',
                     'type' => 'text',
                     'required' => false,
