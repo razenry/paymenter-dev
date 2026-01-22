@@ -15,11 +15,11 @@
     }
 })">
 
-    <div x-on:click="open = !open" class="cursor-pointer">
+    <div x-on:click="open = !open" class="cursor-pointer flex items-center">
         {{ $trigger }}
         @if ($showArrow)
             <x-ri-arrow-down-s-line x-bind:class="{ '-rotate-180': open }"
-                class="md:block hidden size-4 text-base ease-out duration-300" />
+                class="md:block hidden size-4 text-base ease-out duration-300 ml-1 flex-shrink-0" />
         @endif
     </div>
 
