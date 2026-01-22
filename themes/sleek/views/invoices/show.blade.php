@@ -4,20 +4,28 @@
             @include('invoices.partials.payment-modal')
         @endif
 
-        <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-            <h1 class="text-2xl font-bold">Invoice #{{ $invoice->number }}</h1>
+         <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+             <h1 class="text-2xl font-bold">Invoice #{{ $invoice->number }}</h1>
 
-            <x-button.link wire:click="downloadPDF"
-                class="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
-                <span wire:loading wire:target="downloadPDF">
-                    <x-ri-loader-5-fill class="size-5 animate-spin" />
-                </span>
-                <span wire:loading.remove wire:target="downloadPDF">
-                    <x-ri-download-line class="size-5" />
-                    Download PDF
-                </span>
-            </x-button.link>
-        </div>
+             <div class="flex items-center gap-4">
+                 @if($invoice->isServiceExtensionInvoice() && $invoice->status === 'pending')
+                 <span class="cursor-pointer text-sm underline text-error hover:text-error/80" wire:click="$set('showCancelModal', true)">
+                     {{ __('invoices.cancel_invoice') }}
+                 </span>
+                 @endif
+
+                 <x-button.link wire:click="downloadPDF"
+                     class="flex items-center gap-2 text-sm font-medium text-primary hover:text-primary/80">
+                     <span wire:loading wire:target="downloadPDF">
+                         <x-ri-loader-5-fill class="size-5 animate-spin" />
+                     </span>
+                     <span wire:loading.remove wire:target="downloadPDF">
+                         <x-ri-download-line class="size-5" />
+                         Download PDF
+                     </span>
+                 </x-button.link>
+             </div>
+         </div>
 
         <div class="bg-background-secondary border border-neutral/20 rounded-2xl shadow-sm overflow-hidden">
             <div class="border-b border-neutral/20 px-6 py-4 flex flex-wrap gap-3 justify-between items-center">
@@ -301,3 +309,34 @@
         </div>
     </div>
 </div>
+
+{{-- Cancel Invoice Confirmation Modal --}}
+@if($showCancelModal)
+<div class="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" wire:click="$set('showCancelModal', false)"></div>
+    <div class="relative bg-background-secondary rounded-lg text-left overflow-hidden shadow-xl transform transition-all w-full max-w-lg border border-neutral">
+        <div class="bg-background-secondary px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <div class="text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-50 dark:bg-red-900/20 mb-4">
+                    <x-ri-error-warning-line class="h-6 w-6 text-red-500" />
+                </div>
+                <h3 class="text-lg leading-6 font-medium mb-2" id="modal-title">
+                    {{ __('invoices.cancel_invoice') }}
+                </h3>
+                <p class="text-sm text-gray-500 dark:text-gray-400">
+                    {{ __('invoices.cancel_invoice_confirmation') }}
+                </p>
+            </div>
+        </div>
+        <div class="bg-background px-4 py-3 sm:px-6 flex justify-center gap-3">
+            <x-button.danger wire:click="cancelInvoice" wire:loading.attr="disabled">
+                <span wire:loading wire:target="cancelInvoice">Cancelling...</span>
+                <span wire:loading.remove wire:target="cancelInvoice">{{ __('invoices.yes_cancel_invoice') }}</span>
+            </x-button.danger>
+            <x-button.secondary wire:click="$set('showCancelModal', false)">
+                {{ __('invoices.keep_invoice') }}
+            </x-button.secondary>
+        </div>
+    </div>
+</div>
+@endif

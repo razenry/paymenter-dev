@@ -22,3 +22,4 @@ extensions/Servers/LicenseManager
 extensions/Servers/Proxmox
 !themes/default
 !themes/slate
+!themes/sleek
