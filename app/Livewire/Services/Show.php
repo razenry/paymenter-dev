@@ -152,6 +152,12 @@ class Show extends Component
             return;
         }
 
+        // Ensure selectedMonths is numeric
+        if (!is_numeric($this->selectedMonths)) {
+            $this->notify('Invalid duration selected', 'error');
+            return;
+        }
+
         $months = (int) $this->selectedMonths;
 
         // Validate that the service is active and not cancelled

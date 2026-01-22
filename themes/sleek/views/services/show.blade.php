@@ -200,21 +200,26 @@
         <x-modal open="true" title="{{ __('services.generate_invoice') }}" width="max-w-md">
             <div class="p-6">
                 <p class="text-base/70 mb-6">{{ __('services.extend_service') }} - {{ $service->product->name }}</p>
-                <div class="grid grid-cols-2 gap-3">
-                    <button wire:click="generateInvoice(1)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
-                        1 {{ __('services.month') }}
+
+                <div class="mb-6">
+                    <label for="invoice-months" class="block text-sm font-medium mb-3">{{ __('services.select_duration') }}</label>
+                    <select wire:model="selectedMonths" id="invoice-months" class="w-full px-4 py-3 bg-background-secondary border border-neutral/20 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary transition-colors">
+                        <option value="">{{ __('services.select_months') }}</option>
+                        <option value="1">1 {{ __('services.month') }}</option>
+                        <option value="3">3 {{ __('services.months') }}</option>
+                        <option value="6">6 {{ __('services.months') }}</option>
+                        <option value="9">9 {{ __('services.months') }}</option>
+                        <option value="12">12 {{ __('services.months') }}</option>
+                    </select>
+                </div>
+
+                <div class="flex gap-3">
+                    <button wire:click="generateInvoice" class="flex-1 px-4 py-3 bg-neutral/10 text-base border border-neutral/20 hover:bg-neutral/15 hover:border-neutral/30 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed" :disabled="!$wire.selectedMonths">
+                        <span wire:loading.remove wire:target="generateInvoice">{{ __('services.generate') }}</span>
+                        <span wire:loading wire:target="generateInvoice">{{ __('services.generating') }}...</span>
                     </button>
-                    <button wire:click="generateInvoice(3)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
-                        3 {{ __('services.months') }}
-                    </button>
-                    <button wire:click="generateInvoice(6)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
-                        6 {{ __('services.months') }}
-                    </button>
-                    <button wire:click="generateInvoice(9)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors">
-                        9 {{ __('services.months') }}
-                    </button>
-                    <button wire:click="generateInvoice(12)" class="px-4 py-3 text-center bg-primary/10 hover:bg-primary/20 text-primary rounded-lg transition-colors col-span-2">
-                        12 {{ __('services.months') }}
+                    <button wire:click="$set('showGenerateInvoice', false)" @click="open = false" class="px-4 py-3 bg-background-secondary hover:bg-background-tertiary border border-neutral/20 text-base rounded-lg transition-colors">
+                        {{ __('services.cancel') }}
                     </button>
                 </div>
             </div>
