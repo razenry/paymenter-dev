@@ -225,8 +225,45 @@
             </x-slot>
         </x-modal>
     @endif
+    @if($showAutoCancelModal)
+        <x-modal open="true" title="Pending Invoice Found" width="max-w-md">
+            <div class="p-6">
+                <div class="flex items-start mb-4">
+                    <div class="flex-shrink-0">
+                        <x-ri-error-warning-fill class="size-6 text-warning" />
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-base/70">
+                            A pending service extension invoice already exists for this service.
+                        </p>
+                        <p class="text-base/70 mt-2">
+                            <a href="{{ route('invoices.show', $pendingInvoiceId) }}" class="text-primary underline" target="_blank">
+                                View existing invoice
+                            </a>
+                        </p>
+                        <p class="text-base/70 mt-3">
+                            Would you like to cancel the existing invoice and create a new one?
+                        </p>
+                    </div>
+                </div>
 
-    {{-- Extension Views --}}
+                <div class="flex gap-3">
+                    <x-button.danger wire:click="confirmGenerateInvoice" class="flex-1">
+                        <span wire:loading.remove wire:target="confirmGenerateInvoice">Cancel & Generate</span>
+                        <span wire:loading wire:target="confirmGenerateInvoice">Processing...</span>
+                    </x-button.danger>
+                    <x-button.secondary wire:click="proceedWithoutCancel" @click="open = false">
+                        Keep Existing
+                    </x-button.secondary>
+                </div>
+            </div>
+            <x-slot name="closeTrigger">
+                <button wire:click="proceedWithoutCancel" @click="open = false" class="text-base/70 hover:text-base transition-colors duration-200">
+                    <x-ri-close-fill class="size-6" />
+                </button>
+            </x-slot>
+        </x-modal>
+    @endif
     @if (count($views) > 0)
         <div class="bg-background-secondary border border-neutral/20 rounded-xl shadow-sm overflow-hidden">
             @if (count($views) > 1)

@@ -139,8 +139,13 @@ class Show extends Component
         }
     }
 
-    public function generateInvoice()
+    public function generateInvoice($months = null)
     {
+        // If months are provided, set selectedMonths
+        if ($months !== null) {
+            $this->selectedMonths = $months;
+        }
+
         // Validate that months are selected
         if (empty($this->selectedMonths)) {
             $this->notify('Please select a duration', 'error');

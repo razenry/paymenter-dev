@@ -21,10 +21,12 @@ class Show extends Component
 
     public $checkPayment = false;
 
-    private $pay = null;
+    public $pay = null;
 
     #[Url('pay', except: false, nullable: true)]
     public $showPayModal = false;
+
+    public $showCancelModal = false;
 
     public $lastChecked = null;
 
@@ -264,7 +266,8 @@ class Show extends Component
         $this->invoice->status = Invoice::STATUS_CANCELLED;
         $this->invoice->save();
 
-        $this->showCancelModal = false;
-        $this->notify(__('Invoice has been cancelled successfully.'), 'success');
+        $this->notify(__('Invoice has been cancelled successfully.'), 'success', true);
+        
+        return $this->redirect(route('invoices.show', $this->invoice), true);
     }
 }

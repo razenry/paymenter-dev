@@ -177,7 +177,7 @@ class Invoice extends Model implements Auditable
     {
         return $this->items()
             ->where('reference_type', Service::class)
-            ->whereRaw("description LIKE '%- Extension%'")
+            ->where('description', 'like', '%- Extension%')
             ->exists();
     }
 }
