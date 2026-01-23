@@ -21,7 +21,7 @@ class Show extends Component
 
     public $checkPayment = false;
 
-    public $pay = null;
+    private $pay = null;
 
     #[Url('pay', except: false, nullable: true)]
     public $showPayModal = false;
@@ -253,12 +253,14 @@ class Show extends Component
         if ($this->invoice->status !== 'pending') {
             $this->notify(__('Only pending invoices can be cancelled.'), 'error');
             $this->showCancelModal = false;
+
             return;
         }
 
         if (!$this->invoice->isServiceExtensionInvoice()) {
             $this->notify(__('This invoice cannot be cancelled.'), 'error');
             $this->showCancelModal = false;
+
             return;
         }
 
@@ -267,7 +269,7 @@ class Show extends Component
         $this->invoice->save();
 
         $this->notify(__('Invoice has been cancelled successfully.'), 'success', true);
-        
+
         return $this->redirect(route('invoices.show', $this->invoice), true);
     }
 }
