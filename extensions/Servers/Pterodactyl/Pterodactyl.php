@@ -654,7 +654,10 @@ class Pterodactyl extends Server
 
     public function suspendServer(Service $service, $settings, $properties)
     {
-        $server = $this->getServer($service->id);
+        $server = $this->getServer($service->id, failIfNotFound: false);
+        if(!$server) {
+            return true;
+        }
 
         $this->request('/api/application/servers/' . $server . '/suspend', 'post');
 
