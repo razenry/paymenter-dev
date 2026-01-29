@@ -46,6 +46,5 @@ COPY .gitlab/docker/default.conf /etc/nginx/http.d/default.conf
 COPY .gitlab/docker/www.conf /usr/local/etc/php-fpm.conf
 COPY .gitlab/docker/supervisord.conf /etc/supervisord.conf
 
-EXPOSE 80
 ENTRYPOINT [ "/bin/ash", ".gitlab/docker/entrypoint.sh" ]
 CMD [ "supervisord", "-n", "-c", "/etc/supervisord.conf" ]

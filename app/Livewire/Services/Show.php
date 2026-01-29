@@ -6,7 +6,6 @@ use App\Exceptions\DisplayException;
 use App\Helpers\ExtensionHelper;
 use App\Livewire\Component;
 use App\Models\Invoice;
-use App\Models\InvoiceItem;
 use App\Models\Service;
 use Exception;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +30,7 @@ class Show extends Component
 
     #[Url('cancel', except: false)]
     public bool $showCancel = false;
+
     public bool $showCancelUpgrade = false;
 
     public bool $showBillingAgreement = false;
@@ -44,6 +44,10 @@ class Show extends Component
     public $selectedMonths;
 
     public $selectedMethod;
+
+    public $modalMessage = null;
+
+    public bool $showMessageModal = false;
 
     public function mount()
     {
@@ -127,6 +131,13 @@ class Show extends Component
                 $this->redirect($result);
             }
 
+            // If result has a message, show modal
+            if (!empty($result['msg'])) {
+                $this->modalMessage = $result['msg'];
+                $this->showMessageModal = true; // This triggers the modal in your view
+                $this->notify($result['msg']);
+            }
+
             // Otherwise, return the result (could be JSON or array)
             return $result;
 
@@ -149,12 +160,14 @@ class Show extends Component
         // Validate that months are selected
         if (empty($this->selectedMonths)) {
             $this->notify('Please select a duration', 'error');
+
             return;
         }
 
         // Ensure selectedMonths is numeric
         if (!is_numeric($this->selectedMonths)) {
             $this->notify('Invalid duration selected', 'error');
+
             return;
         }
 
@@ -165,6 +178,7 @@ class Show extends Component
             $this->notify('Cannot generate invoice for inactive service', 'error');
             $this->showGenerateInvoice = false;
             $this->selectedMonths = null;
+
             return;
         }
 
@@ -181,6 +195,7 @@ class Show extends Component
         if ($pendingInvoice) {
             $this->pendingInvoiceId = $pendingInvoice->id;
             $this->showAutoCancelModal = true;
+
             return;
         }
 
@@ -219,7 +234,7 @@ class Show extends Component
     {
         try {
             $months = (int) $this->selectedMonths;
-            
+
             // Calculate the price for the specified number of months
             $monthlyPrice = $this->service->calculatePrice();
             $totalPrice = (float) $monthlyPrice * $months;
