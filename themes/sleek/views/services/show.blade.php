@@ -1,4 +1,54 @@
 <div class="space-y-6 pt-4">
+   @if($showResetModal)
+    <x-modal open="true" width="max-w-md">
+        <x-slot name="closeTrigger">
+            <button wire:click="$set('showResetModal', false)" class="text-base/40 hover:text-base cursor-pointer p-2">
+                <x-ri-close-line class="size-6" />
+            </button>
+        </x-slot>
+
+        <div class="p-8" x-data="{ show: false }">
+            <div class="mb-6 text-center">
+                <h3 class="text-xl font-bold text-base">New Password Generated</h3>
+                <p class="text-sm text-base/60">Please save this securely.</p>
+            </div>
+
+            {{-- Password Display Box --}}
+            <div class="mb-6" x-data="{ show: false }">
+                <div class="relative"> {{-- This relative wrapper keeps the eye inside the box --}}
+                    <div class="w-full bg-base-100 border border-base/10 rounded-lg pl-4 pr-12 py-4 font-mono text-lg text-center tracking-wider">
+                        <span x-show="!show">••••••••••••</span>
+                        <span x-show="show" class="text-primary">{{ $resetModalContent }}</span>
+                    </div>
+                    
+                    {{-- Toggle Visibility --}}
+                    <button 
+                        @click="show = !show"
+                        type="button"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-base/40 hover:text-primary cursor-pointer transition-colors p-1"
+                        title="Toggle Visibility"
+                    >
+                        <x-ri-eye-line x-show="!show" class="size-5" />
+                        <x-ri-eye-off-line x-show="show" class="size-5" />
+                    </button>
+                </div>
+            </div>
+
+            {{-- Help Note --}}
+            <p class="text-xs text-base/50 text-center italic mb-8">
+                <strong>Note:</strong> This password will not be shown again once you close this window.
+            </p>
+
+            {{-- Simple Close/Confirm --}}
+            <x-button.primary 
+                wire:click="$set('showResetModal', false)" 
+                class="w-full justify-center py-3 cursor-pointer transition-all hover:brightness-110 active:scale-[0.98]"
+            >
+                Got it, I've saved it
+            </x-button.primary>
+        </div>
+    </x-modal>
+    @endif
     {{-- Outstanding Invoice --}}
     @if ($invoice = $service->invoices()->where('status', 'pending')->first())
         <div class="w-full">
@@ -102,26 +152,7 @@
                 </div>
             </div>
 
-            {{-- ✅ Your new message modal --}}
-            @if($showMessageModal)
-                <x-modal open="true" title="Notice" width="max-w-md">
-                    <div class="p-6 text-center">
-                        <p class="text-base/70">{{ $modalMessage }}</p>
 
-                        <div class="mt-6">
-                            <x-button.primary wire:click="$set('showMessageModal', false)">
-                                Close
-                            </x-button.primary>
-                        </div>
-                    </div>
-                    <x-slot name="closeTrigger">
-                    <button wire:click="$set('showMessageModal', false)" class="text-base/70 hover:text-base transition-colors duration-200">
-                        <x-ri-close-fill class="size-6" />
-                    </button>
-
-                    </x-slot>
-                </x-modal>
-            @endif
 
             @if ($service->cancellable || $service->upgradable || count($buttons) > 0)
                 <div>

@@ -45,9 +45,9 @@ class Show extends Component
 
     public $selectedMethod;
 
-    public $modalMessage = null;
+    public $resetModalContent = null;
 
-    public bool $showMessageModal = false;
+    public bool $showResetModal = false;
 
     public function mount()
     {
@@ -132,10 +132,9 @@ class Show extends Component
             }
 
             // If result has a message, show modal
-            if (!empty($result['msg'])) {
-                $this->modalMessage = $result['msg'];
-                $this->showMessageModal = true; // This triggers the modal in your view
-                $this->notify($result['msg']);
+            if (!empty($result['reset_password'])) {
+                $this->resetModalContent = $result['reset_password'];
+                $this->showResetModal = true; // This triggers the modal in your view
             }
 
             // Otherwise, return the result (could be JSON or array)

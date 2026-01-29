@@ -262,31 +262,40 @@ class PterodactylProxmox extends Server
         ];
     }
 
-    private function getOrCreateUser($orderUser): int
+    private function getOrCreateUserId($orderUser): int
     {
-        // Try to fetch an existing user by email
+        return (int) $this->getOrCreateUser($orderUser)['id'];
+    }
+
+    private function getOrCreateUser($orderUser): array
+    {
+        // 1. Try to fetch an existing user by email
         $response = $this->request('/api/application/users', 'get', [
-            'filter' => ['email' => $orderUser->email],
+            'filter[email]' => $orderUser->email, // Pterodactyl uses filter[key] syntax
         ]);
 
-        if (!empty($response['data'][0]['attributes']['id'])) {
-            return (int) $response['data'][0]['attributes']['id'];
+        // Check if user exists in the response
+        if (!empty($response['data'])) {
+            // Returns the first user's attributes [id, username, email, first_name, etc.]
+            return $response['data'][0]['attributes'];
         }
 
-        // If user doesn't exist, create a new one
+        // 2. If user doesn't exist, prepare creation data
         $username = preg_replace('/[^a-zA-Z0-9]/', '', strtolower(Str::transliterate($orderUser->name)))
-            ?? Str::random(8);
+                    ?: Str::random(8);
         $username .= '_' . Str::random(4);
 
         $newUser = $this->request('/api/application/users', 'post', [
             'email' => $orderUser->email,
             'username' => $username,
-            'first_name' => $orderUser->first_name ?? '',
-            'last_name' => $orderUser->last_name ?? '',
+            'first_name' => $orderUser->first_name ?: $orderUser->name, // Ensure not empty
+            'last_name' => $orderUser->last_name ?: 'User',          // Pterodactyl requires these
         ]);
 
-        return (int) $newUser['attributes']['id'];
+        // Return the newly created user's attributes
+        return $newUser['attributes'];
     }
+
 
     public function createServer(Service $service, $settings, $properties)
     {
@@ -332,7 +341,7 @@ class PterodactylProxmox extends Server
         }
 
         $orderUser = $service->user;
-        $user = $this->getOrCreateUser($orderUser);
+        $user = $this->getOrCreateUserId($orderUser);
 
         if (isset($settings['location'])) {
             $settings['location_ids'] = [$settings['location']];
@@ -465,28 +474,6 @@ class PterodactylProxmox extends Server
         return true;
     }
 
-    public function ssoLink(Service $service): string
-    {
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-
-        if (empty($userAgent)) {
-            throw new DisplayException('User agent cannot be empty.');
-        }
-
-        $orderUser = $service->user;
-        if (!$orderUser->hasVerifiedEmail()) {
-            return route('verification.notice');
-        }
-
-        $userId = $this->getOrCreateUser($orderUser);
-        $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
-            'user_agent' => $userAgent,
-        ]);
-
-        return rtrim($this->config('host'), '/') .
-            sprintf('/auth/login/sso?token_id=%s&token=%s', $data['token_id'], $data['token']);
-    }
-
     public function migrateOption(string $key, ?string $value)
     {
         return match ($key) {
@@ -585,21 +572,7 @@ class PterodactylProxmox extends Server
         }
     }
 
-    public function changePassword(int $userId, string $newPassword): bool
-    {
-        if (empty($newPassword)) {
-            throw new Exception('Password cannot be empty.');
-        }
-
-        // Update the user's password via Pterodactyl API
-        $this->request('/api/application/users/' . $userId, 'patch', [
-            'password' => $newPassword,
-        ]);
-
-        return true;
-    }
-
-    public function resetPassword(Service $service)
+    public function ssoLink(Service $service): string
     {
         $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
 
@@ -612,14 +585,47 @@ class PterodactylProxmox extends Server
             return route('verification.notice');
         }
 
-        // $userId = $this->getOrCreateUser($orderUser);
-        // $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
-        //     'user_agent' => $userAgent,
-        // ]);
+        $userId = $this->getOrCreateUserId($orderUser);
+        $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
+            'user_agent' => $userAgent,
+        ]);
 
-        return [
-            'msg' => 'ayoo',
-        ];
+        return rtrim($this->config('host'), '/') .
+            sprintf('/auth/login/sso?token_id=%s&token=%s', $data['token_id'], $data['token']);
+    }
+
+    public function resetPassword(Service $service)
+    {
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        if (empty($userAgent)) {
+            throw new DisplayException('User agent cannot be empty.');
+        }
+
+        $orderUser = $service->user;
+        if (!$orderUser->hasVerifiedEmail()) {
+            return redirect()->route('verification.notice');
+        }
+
+        // 1. Generate the secure password locally first
+        $newPassword = Str::password(16);
+
+        $pterodactylUser = $this->getOrCreateUser($orderUser);
+        $userId = $pterodactylUser['id'];
+
+        $this->request('/api/application/users/' . $userId, 'patch', [
+            'email' => $pterodactylUser['email'],
+            'username' => $pterodactylUser['username'],
+            'first_name' => $pterodactylUser['first_name'],
+            'last_name' => $pterodactylUser['last_name'],
+            'password' => $newPassword,
+        ]);
+
+        // 4. Update UI state
+        $this->resetModalContent = $newPassword;
+        $this->showResetModal = true;
+
+        return ['reset_password' => $newPassword];
     }
 
     public function getActions(Service $service): array
