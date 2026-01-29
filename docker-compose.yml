@@ -31,7 +31,7 @@ services:
       - cache
 
   database:
-    image: mariadb:latest
+    image: mariadb:lts
     container_name: laravel_db
     restart: unless-stopped
     environment:
