@@ -45,6 +45,10 @@ class Show extends Component
 
     public $selectedMethod;
 
+    public $resetModalContent = null;
+
+    public bool $showResetModal = false;
+
     public function mount()
     {
         // Only fetch the actions if the service is active
@@ -125,6 +129,12 @@ class Show extends Component
             // If it returns a URL, redirect
             if (is_string($result)) {
                 $this->redirect($result);
+            }
+
+            // If result has a message, show modal
+            if (!empty($result['reset_password'])) {
+                $this->resetModalContent = $result['reset_password'];
+                $this->showResetModal = true; // This triggers the modal in your view
             }
 
             // Otherwise, return the result (could be JSON or array)
