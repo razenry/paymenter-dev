@@ -655,7 +655,7 @@ class Pterodactyl extends Server
     public function suspendServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if (!$server) {
+        if(!$server) {
             return true;
         }
 
@@ -676,10 +676,10 @@ class Pterodactyl extends Server
     public function terminateServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if (!$server) {
+        if(!$server) {
             return true;
         }
-
+        
         $this->request('/api/application/servers/' . $server, 'delete');
 
         return true;
@@ -739,6 +739,43 @@ class Pterodactyl extends Server
         return true;
     }
 
+    public function getActions(Service $service): array
+    {
+        $orderUser = $service->user;
+        $isVerified = $orderUser->hasVerifiedEmail();
+
+        return [
+            [
+                'type' => 'button',
+                'label' => 'Go to Server',
+                'function' => 'ssoLink',
+                'disabled' => !$isVerified,
+                'tooltip' => $isVerified ? null : 'You must verify your email to access the panel',
+            ],
+        ];
+    }
+
+    public function ssoLink(Service $service): string
+    {
+        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
+
+        if (empty($userAgent)) {
+            throw new DisplayException('User agent cannot be empty.');
+        }
+
+        $orderUser = $service->user;
+        if (!$orderUser->hasVerifiedEmail()) {
+            return route('verification.notice');
+        }
+
+        $userId = $this->getOrCreateUser($orderUser);
+        $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
+            'user_agent' => $userAgent,
+        ]);
+
+        return rtrim($this->config('host'), '/') .
+            sprintf('/auth/login/sso?token_id=%s&token=%s', $data['token_id'], $data['token']);
+    }
 
     public function migrateOption(string $key, ?string $value)
     {
@@ -836,75 +873,5 @@ class Pterodactyl extends Server
         } catch (Exception $e) {
             logger()->error("Failed to update billing date for service #{$service->id}: " . $e->getMessage());
         }
-    }
-
-
-    
-    public function ssoLink(Service $service): string
-    {
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-
-        if (empty($userAgent)) {
-            throw new DisplayException('User agent cannot be empty.');
-        }
-
-        $orderUser = $service->user;
-        if (!$orderUser->hasVerifiedEmail()) {
-            return route('verification.notice');
-        }
-
-        $userId = $this->getOrCreateUser($orderUser);
-        $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
-            'user_agent' => $userAgent,
-        ]);
-
-        return rtrim($this->config('host'), '/') .
-            sprintf('/auth/login/sso?token_id=%s&token=%s', $data['token_id'], $data['token']);
-    }
-
-    
-    public function resetPassword(Service $service): string
-    {
-        $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? '';
-
-        if (empty($userAgent)) {
-            throw new DisplayException('User agent cannot be empty.');
-        }
-
-        $orderUser = $service->user;
-        if (!$orderUser->hasVerifiedEmail()) {
-            return route('verification.notice');
-        }
-
-        $userId = $this->getOrCreateUser($orderUser);
-        $data = $this->request('/api/application/users/' . $userId . '/sso', 'post', [
-            'user_agent' => $userAgent,
-        ]);
-
-        return rtrim($this->config('host'), '/') .
-            sprintf('/auth/login/sso?token_id=%s&token=%s', $data['token_id'], $data['token']);
-    }
-    
-    public function getActions(Service $service): array
-    {
-        $orderUser = $service->user;
-        $isVerified = $orderUser->hasVerifiedEmail();
-
-        return [
-            [
-                'type' => 'button',
-                'label' => 'Go to Server',
-                'function' => 'ssoLink',
-                'disabled' => !$isVerified,
-                'tooltip' => $isVerified ? null : 'You must verify your email to access the panel',
-            ],
-            [
-                'type' => 'button',
-                'label' => 'Reset Password',
-                'function' => 'resetPassword',
-                'disabled' => !$isVerified,
-                'tooltip' => $isVerified ? null : 'You must verify your email to reset the password',
-            ],
-        ];
     }
 }

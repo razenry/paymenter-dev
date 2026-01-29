@@ -102,27 +102,6 @@
                 </div>
             </div>
 
-            {{-- ✅ Your new message modal --}}
-            @if($showMessageModal)
-                <x-modal open="true" title="Notice" width="max-w-md">
-                    <div class="p-6 text-center">
-                        <p class="text-base/70">{{ $modalMessage }}</p>
-
-                        <div class="mt-6">
-                            <x-button.primary wire:click="$set('showMessageModal', false)">
-                                Close
-                            </x-button.primary>
-                        </div>
-                    </div>
-                    <x-slot name="closeTrigger">
-                    <button wire:click="$set('showMessageModal', false)" class="text-base/70 hover:text-base transition-colors duration-200">
-                        <x-ri-close-fill class="size-6" />
-                    </button>
-
-                    </x-slot>
-                </x-modal>
-            @endif
-
             @if ($service->cancellable || $service->upgradable || count($buttons) > 0)
                 <div>
                     <h2 class="text-lg font-semibold mb-4">{{ __('services.actions') }}</h2>
