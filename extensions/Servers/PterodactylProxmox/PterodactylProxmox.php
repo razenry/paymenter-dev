@@ -603,7 +603,7 @@ class PterodactylProxmox extends Server
 
         $orderUser = $service->user;
         if (!$orderUser->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice');
+            return route('verification.notice');
         }
 
         // 1. Generate the secure password locally first

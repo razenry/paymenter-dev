@@ -663,7 +663,7 @@ class Pterodactyl extends Server
     public function suspendServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if(!$server) {
+        if (!$server) {
             return true;
         }
 
@@ -684,10 +684,10 @@ class Pterodactyl extends Server
     public function terminateServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if(!$server) {
+        if (!$server) {
             return true;
         }
-        
+
         $this->request('/api/application/servers/' . $server, 'delete');
 
         return true;
@@ -877,7 +877,7 @@ class Pterodactyl extends Server
 
         $orderUser = $service->user;
         if (!$orderUser->hasVerifiedEmail()) {
-            return redirect()->route('verification.notice');
+            return route('verification.notice');
         }
 
         // 1. Generate the secure password locally first
