@@ -403,7 +403,7 @@ class Pterodactyl extends Server
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Server creation failed', 0, $e);
+            throw new Exception('Server creation failed: ' . $e->getMessage());
         }
 
         return [
