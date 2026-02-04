@@ -49,8 +49,11 @@ class Show extends Component
 
     public bool $showResetModal = false;
 
+    public ?string $external_id = null;
+
     public function mount()
     {
+        $this->external_id = ExtensionHelper::getServerId($this->service);
         // Only fetch the actions if the service is active
         if ($this->service->status == Service::STATUS_ACTIVE) {
             $actions = [];
@@ -229,7 +232,7 @@ class Show extends Component
     {
         try {
             $months = (int) $this->selectedMonths;
-            
+
             // Calculate the price for the specified number of months
             $monthlyPrice = $this->service->calculatePrice();
             $totalPrice = (float) $monthlyPrice * $months;

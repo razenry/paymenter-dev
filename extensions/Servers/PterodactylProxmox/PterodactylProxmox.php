@@ -304,9 +304,15 @@ class PterodactylProxmox extends Server
             return null;
         }
 
-        $serverId = $server['attributes']['uuid'];
-        return $serverId;
+        $uuid = $server['attributes']['uuid'];
+        $name = $server['attributes']['name'];
+
+        // Take only the first UUID segment
+        $shortUuid = explode('-', $uuid)[0];
+
+        return "{$shortUuid} - {$name}";
     }
+    
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {

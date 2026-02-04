@@ -298,12 +298,17 @@ class Pterodactyl extends Server
     public function getServerId(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, false, raw: true);
-        if(!$server) {
+        if (!$server) {
             return null;
         }
 
-        $serverId = $server['attributes']['uuid'];
-        return $serverId;
+        $uuid = $server['attributes']['uuid'];
+        $name = $server['attributes']['name'];
+
+        // Take only the first UUID segment
+        $shortUuid = explode('-', $uuid)[0];
+
+        return "{$shortUuid} - {$name}";
     }
 
     public function createServer(Service $service, $settings, $properties)
