@@ -27,9 +27,8 @@ class Index extends Component
             $service->external_id = ExtensionHelper::getServerId($service);
             return $service;
         });
-        
         return view('services.index', [
-            'services' => $services->paginate(config('settings.pagination')),
+            'services' => $services,
         ])->layoutData([
                     'title' => 'Services',
                     'sidebar' => true,
