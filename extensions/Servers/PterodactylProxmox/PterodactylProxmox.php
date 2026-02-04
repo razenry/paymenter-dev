@@ -299,7 +299,11 @@ class PterodactylProxmox extends Server
 
     public function getServerId(Service $service, $settings, $properties)
     {
-        $server = $this->getServer($service->id, true, raw: true);
+        $server = $this->getServer($service->id, false, raw: true);
+        if(!$server) {
+            return;
+        }
+        
         $serverId = $server['attributes']['uuid'];
         return $serverId;
     }
