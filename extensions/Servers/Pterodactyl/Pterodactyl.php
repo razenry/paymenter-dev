@@ -299,9 +299,9 @@ class Pterodactyl extends Server
     {
         $server = $this->getServer($service->id, false, raw: true);
         if(!$server) {
-            return;
+            return null;
         }
-        
+
         $serverId = $server['attributes']['uuid'];
         return $serverId;
     }
