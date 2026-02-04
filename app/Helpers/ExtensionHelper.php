@@ -601,21 +601,37 @@ class ExtensionHelper
         return $success;
     }
 
+
     /**
      * Get server id
      */
     public static function getServerId(Service $service)
     {
-        $server = self::checkServer($service, 'getServerId');
+        $cacheKey = "service:{$service->id}:server_id";
 
-        self::recordAudit($service, 'extension_action', [], ['action' => 'get_server_id']);
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($service) {
+            $server = self::checkServer($service, 'getServerId');
 
-        $success = self::getExtension('server', $server->extension, $server->settings)->getServerId($service, self::settingsToArray($service->product->settings), self::getServiceProperties($service));
-        if ($success) {
-            $service->update(['status' => Service::STATUS_ACTIVE]);
-        }
+            self::recordAudit($service, 'extension_action', [], [
+                'action' => 'get_server_id',
+            ]);
 
-        return $success;
+            $result = self::getExtension(
+                'server',
+                $server->extension,
+                $server->settings
+            )->getServerId(
+                    $service,
+                    self::settingsToArray($service->product->settings),
+                    self::getServiceProperties($service)
+                );
+
+            if ($result) {
+                $service->update(['status' => Service::STATUS_ACTIVE]);
+            }
+
+            return $result;
+        });
     }
 
     /**
