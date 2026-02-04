@@ -60,8 +60,8 @@ echo -e "Storage directories created."
 
 ## set storage permissions to 777 and user nginx:nginx
 echo -e "Setting storage permissions."
-chmod -R 777 /app/storage
-chown -R nginx:nginx /app/storage
+chmod -R 755 /app/storage/* /app/bootstrap/cache/
+chown -R nginx:nginx /app/*
 
 ## make sure the db is set up
 echo -e "Migrating and Seeding D.B"
