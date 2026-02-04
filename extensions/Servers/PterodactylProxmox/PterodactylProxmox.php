@@ -55,9 +55,9 @@ class PterodactylProxmox extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->config('api_key'),
-            'Accept' => 'application/json',
-        ])->$method($req_url, $data);
+                    'Authorization' => 'Bearer ' . $this->config('api_key'),
+                    'Accept' => 'application/json',
+                ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             $body = $response->json();
@@ -282,7 +282,7 @@ class PterodactylProxmox extends Server
 
         // 2. If user doesn't exist, prepare creation data
         $username = preg_replace('/[^a-zA-Z0-9]/', '', strtolower(Str::transliterate($orderUser->name)))
-                    ?: Str::random(8);
+            ?: Str::random(8);
         $username .= '_' . Str::random(4);
 
         $newUser = $this->request('/api/application/users', 'post', [
@@ -296,6 +296,13 @@ class PterodactylProxmox extends Server
         return $newUser['attributes'];
     }
 
+
+    public function getServerId(Service $service, $settings, $properties)
+    {
+        $server = $this->getServer($service->id, true, raw: true);
+        $serverId = $server['attributes']['uuid'];
+        return $serverId;
+    }
 
     public function createServer(Service $service, $settings, $properties)
     {
@@ -420,10 +427,10 @@ class PterodactylProxmox extends Server
     public function suspendServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if(!$server) {
+        if (!$server) {
             return true;
         }
-        
+
         $this->request('/api/application/servers/' . $server . '/suspend', 'post');
 
         return true;
@@ -441,10 +448,10 @@ class PterodactylProxmox extends Server
     public function terminateServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if(!$server) {
+        if (!$server) {
             return true;
         }
-        
+
         $this->request('/api/application/servers/' . $server, 'delete');
 
         return true;
