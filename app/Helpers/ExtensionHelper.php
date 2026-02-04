@@ -610,8 +610,14 @@ class ExtensionHelper
         $cacheKey = "service:{$service->id}:server_id";
 
         return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($service) {
-            $server = self::checkServer($service, 'getServerId');
-
+            try {
+                $server = self::checkServer($service, 'getServerId');
+            } catch (Exception $e) {
+                $msg = $e->getMessage();
+                logger()->error("Failed to get server: $msg");
+                return;
+            }
+            
             self::recordAudit($service, 'extension_action', [], [
                 'action' => 'get_server_id',
             ]);
