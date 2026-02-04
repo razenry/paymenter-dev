@@ -626,10 +626,6 @@ class ExtensionHelper
                     self::getServiceProperties($service)
                 );
 
-            if ($result) {
-                $service->update(['status' => Service::STATUS_ACTIVE]);
-            }
-
             return $result;
         });
     }
