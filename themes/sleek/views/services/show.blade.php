@@ -122,6 +122,14 @@
                             <span class="font-medium text-primary">{{ $service->formattedPrice }}</span>
                         </div>
 
+                        @if (!empty($external_id))
+                            <div class="flex justify-between py-3 px-4">
+                                <span class="text-sm text-base/70">{{ __('services.external_id') }}</span>
+                                <span class="font-medium font-mono">
+                                    {{ $external_id }}
+                                </span>
+                            </div>
+                        @endif
                         @if ($service->plan->type == 'recurring')
                             <div class="flex justify-between py-3 px-4">
                                 <span class="text-sm text-base/70">{{ __('services.billing_cycle') }}</span>

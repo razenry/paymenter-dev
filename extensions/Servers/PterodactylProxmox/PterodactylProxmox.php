@@ -55,9 +55,9 @@ class PterodactylProxmox extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->config('api_key'),
-            'Accept' => 'application/json',
-        ])->$method($req_url, $data);
+                    'Authorization' => 'Bearer ' . $this->config('api_key'),
+                    'Accept' => 'application/json',
+                ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             $body = $response->json();
@@ -282,7 +282,7 @@ class PterodactylProxmox extends Server
 
         // 2. If user doesn't exist, prepare creation data
         $username = preg_replace('/[^a-zA-Z0-9]/', '', strtolower(Str::transliterate($orderUser->name)))
-                    ?: Str::random(8);
+            ?: Str::random(8);
         $username .= '_' . Str::random(4);
 
         $newUser = $this->request('/api/application/users', 'post', [
@@ -297,6 +297,22 @@ class PterodactylProxmox extends Server
     }
 
 
+    public function getServerId(Service $service, $settings, $properties)
+    {
+        $server = $this->getServer($service->id, false, raw: true);
+        if (!$server) {
+            return null;
+        }
+
+        $uuid = $server['attributes']['uuid'];
+        $name = $server['attributes']['name'];
+
+        // Take only the first UUID segment
+        $shortUuid = explode('-', $uuid)[0];
+
+        return "{$shortUuid} - {$name}";
+    }
+    
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
@@ -420,10 +436,10 @@ class PterodactylProxmox extends Server
     public function suspendServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if(!$server) {
+        if (!$server) {
             return true;
         }
-        
+
         $this->request('/api/application/servers/' . $server . '/suspend', 'post');
 
         return true;
@@ -441,10 +457,10 @@ class PterodactylProxmox extends Server
     public function terminateServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, failIfNotFound: false);
-        if(!$server) {
+        if (!$server) {
             return true;
         }
-        
+
         $this->request('/api/application/servers/' . $server, 'delete');
 
         return true;

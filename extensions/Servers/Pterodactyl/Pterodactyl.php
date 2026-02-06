@@ -55,9 +55,9 @@ class Pterodactyl extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->config('api_key'),
-            'Accept' => 'application/json',
-        ])->$method($req_url, $data);
+                    'Authorization' => 'Bearer ' . $this->config('api_key'),
+                    'Accept' => 'application/json',
+                ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             $body = $response->json();
@@ -282,7 +282,7 @@ class Pterodactyl extends Server
 
         // 2. If user doesn't exist, prepare creation data
         $username = preg_replace('/[^a-zA-Z0-9]/', '', strtolower(Str::transliterate($orderUser->name)))
-                    ?: Str::random(8);
+            ?: Str::random(8);
         $username .= '_' . Str::random(4);
 
         $newUser = $this->request('/api/application/users', 'post', [
@@ -294,6 +294,21 @@ class Pterodactyl extends Server
 
         // Return the newly created user's attributes
         return $newUser['attributes'];
+    }
+    public function getServerId(Service $service, $settings, $properties)
+    {
+        $server = $this->getServer($service->id, false, raw: true);
+        if (!$server) {
+            return null;
+        }
+
+        $uuid = $server['attributes']['uuid'];
+        $name = $server['attributes']['name'];
+
+        // Take only the first UUID segment
+        $shortUuid = explode('-', $uuid)[0];
+
+        return "{$shortUuid} - {$name}";
     }
 
     public function createServer(Service $service, $settings, $properties)
@@ -424,7 +439,7 @@ class Pterodactyl extends Server
                     'include' => ['allocations'],
                 ]);
                 $nodes = collect($nodes['data']);
-                $nodes_by_id = $nodes->mapWithKeys(fn ($node) => [$node['attributes']['id'] => $node['attributes']]);
+                $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
 
                 if (!$nodes_by_id->has($settings['node'])) {
                     throw new Exception('Node is not suitable for deployment.');
@@ -432,9 +447,9 @@ class Pterodactyl extends Server
                 $node = $nodes_by_id->get($settings['node']);
                 $availablePorts = collect($node['relationships']['allocations']['data']);
                 $availablePorts = $availablePorts
-                    ->filter(fn ($port) => !$port['attributes']['assigned'])
+                    ->filter(fn($port) => !$port['attributes']['assigned'])
                     ->map(
-                        fn ($port) => [
+                        fn($port) => [
                             'port' => $port['attributes']['port'],
                             'id' => $port['attributes']['id'],
                         ]
@@ -509,7 +524,7 @@ class Pterodactyl extends Server
             'include' => ['allocations'],
         ]);
         $nodes = collect($nodes['data']);
-        $nodes_by_id = $nodes->mapWithKeys(fn ($node) => [$node['attributes']['id'] => $node['attributes']]);
+        $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
 
         if ($settings['node']) {
             // If the product's node id is not in the deployable nodes array, throw error.
@@ -520,9 +535,9 @@ class Pterodactyl extends Server
             $node = $nodes_by_id->get($settings['node']);
             $availablePorts = collect($node['relationships']['allocations']['data']);
             $availablePorts = $availablePorts
-                ->filter(fn ($port) => !$port['attributes']['assigned'])
+                ->filter(fn($port) => !$port['attributes']['assigned'])
                 ->map(
-                    fn ($port) => [
+                    fn($port) => [
                         'port' => $port['attributes']['port'],
                         'id' => $port['attributes']['id'],
                     ]
@@ -540,9 +555,9 @@ class Pterodactyl extends Server
             foreach ($nodes as $index => $node) {
                 $availablePorts = collect($node['attributes']['relationships']['allocations']['data']);
                 $availablePorts = $availablePorts
-                    ->filter(fn ($port) => !$port['attributes']['assigned'])
+                    ->filter(fn($port) => !$port['attributes']['assigned'])
                     ->map(
-                        fn ($port) => [
+                        fn($port) => [
                             'port' => $port['attributes']['port'],
                             'id' => $port['attributes']['id'],
                         ]

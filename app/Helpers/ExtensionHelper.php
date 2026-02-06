@@ -43,13 +43,13 @@ class ExtensionHelper
 
         if ($type && $type == 'other') {
             // Filter out gateways and servers
-            $extensions = array_filter($extensions, fn ($extension) => !in_array($extension['type'], ['gateway', 'server']));
+            $extensions = array_filter($extensions, fn($extension) => !in_array($extension['type'], ['gateway', 'server']));
 
             return $extensions;
         } elseif ($type) {
             $type = strtolower($type);
 
-            return array_filter($extensions, fn ($extension) => $extension['type'] === $type);
+            return array_filter($extensions, fn($extension) => $extension['type'] === $type);
         }
 
         return $extensions;
@@ -220,7 +220,7 @@ class ExtensionHelper
         // Filter out already installed extensions
         $installedExtensions = Extension::all()->pluck('extension')->toArray();
 
-        return array_filter($extensions, fn ($extension) => !in_array($extension['name'], $installedExtensions));
+        return array_filter($extensions, fn($extension) => !in_array($extension['name'], $installedExtensions));
     }
 
     public static function call($extension, $function, $args = [], $mayFail = false)
@@ -601,6 +601,41 @@ class ExtensionHelper
         return $success;
     }
 
+
+    /**
+     * Get server id
+     */
+    public static function getServerId(Service $service)
+    {
+        $cacheKey = "service:{$service->id}:server_id";
+
+        return Cache::remember($cacheKey, now()->addMinutes(5), function () use ($service) {
+            try {
+                $server = self::checkServer($service, 'getServerId');
+            } catch (Exception $e) {
+                $msg = $e->getMessage();
+                logger()->error("Failed to get server: $msg");
+                return;
+            }
+            
+            self::recordAudit($service, 'extension_action', [], [
+                'action' => 'get_server_id',
+            ]);
+
+            $result = self::getExtension(
+                'server',
+                $server->extension,
+                $server->settings
+            )->getServerId(
+                    $service,
+                    self::settingsToArray($service->product->settings),
+                    self::getServiceProperties($service)
+                );
+
+            return $result;
+        });
+    }
+
     /**
      * Suspend server
      */
@@ -635,7 +670,7 @@ class ExtensionHelper
         self::recordAudit($service, 'extension_action', [], ['action' => 'terminate_server']);
 
         $success = self::getExtension('server', $server->extension, $server->settings)->terminateServer($service, self::settingsToArray($service->product->settings), self::getServiceProperties($service));
-        if($success) {
+        if ($success) {
             $service->update(['status' => 'cancelled']);
             // Cancel outstanding invoices
             $service->invoices()->where('status', 'pending')->update(['status' => 'cancelled']);
@@ -644,7 +679,7 @@ class ExtensionHelper
                 $service->product->increment('stock', $service->quantity);
             }
         }
- 
+
         return $success;
     }
 

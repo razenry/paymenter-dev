@@ -8,7 +8,7 @@ return [
     'name' => 'Name',
     'actions' => 'Actions',
     'view' => 'View',
-
+    'external_id' => 'External ID',
     'product_details' => 'Product Details',
     'billing_cycle' => 'Billing Cycle',
     'cancel' => 'Cancel',
