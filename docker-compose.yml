@@ -33,10 +33,10 @@ services:
     container_name: laravel_db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: rootsecret
-      MYSQL_DATABASE: paymenter
-      MYSQL_USER: paymenter
-      MYSQL_PASSWORD: secret
+      MARIADB_ROOT_PASSWORD: rootsecret
+      MARIADB_DATABASE: paymenter
+      MARIADB_USER: paymenter
+      MARIADB_PASSWORD: secret
     ports:
       - "3306:3306"
     volumes:
