@@ -55,13 +55,13 @@ class PterodactylProxmox extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->config('api_key'),
-                    'Accept' => 'application/json',
-                ])->$method($req_url, $data);
+            'Authorization' => 'Bearer ' . $this->config('api_key'),
+            'Accept' => 'application/json',
+        ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             $body = $response->json();
-            logger()->error('[pterodactyl] failed to execute api call', $body['errors']);
+            logger()->debug('[pterodactyl] failed to execute api call', $body['errors']);
             throw new Exception($body['errors'][0]['detail']);
         }
 
@@ -296,7 +296,6 @@ class PterodactylProxmox extends Server
         return $newUser['attributes'];
     }
 
-
     public function getServerId(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, false, raw: true);
@@ -312,7 +311,7 @@ class PterodactylProxmox extends Server
 
         return "{$shortUuid} - {$name}";
     }
-    
+
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
@@ -465,6 +464,7 @@ class PterodactylProxmox extends Server
 
         return true;
     }
+
     public function upgradeServer(Service $service, $settings, $properties)
     {
         $server = $this->getServer($service->id, raw: true);
