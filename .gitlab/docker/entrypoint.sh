@@ -1,75 +1,64 @@
 #!/bin/ash -e
 cd /app
 
-mkdir -p /var/log/supervisord/ /var/log/nginx/ 
+echo "== Preparing filesystem =="
+# Base dirs (only what is actually needed)
+mkdir -p \
+  /var/log/nginx \
+  /var/run/nginx \
+  /var/log/supervisord \
+  /app/storage \
+  /app/bootstrap/cache
 
+# Ownership (ONLY writable paths)
+chown -R nginx:nginx \
+  /app/storage \
+  /app/bootstrap/cache \
+  /var/log/nginx \
+  /var/run/nginx
 
-## check for .env file and generate app keys if missing
+echo "== Loading environment =="
 if [ -f /app/.env ]; then
-    echo "Found existing /app/.env"
-    export $(grep -v '^#' /app/.env | xargs)
+  echo "Found existing /app/.env"
+  export $(grep -v '^#' /app/.env | xargs)
 fi
 
-# In Docker Compose, services communicate using service names, not 127.0.0.1
-# Always use 'database' as the hostname for internal Docker network connections
-# The .env file might have 127.0.0.1 for external connections, but internally we need the service name
-# Check if we're in Docker (service name 'database' should be resolvable)
-if [ "$DB_HOST" = "127.0.0.1" ] || [ "$DB_HOST" = "localhost" ] || [ -z "$DB_HOST" ]; then
-    echo "DB_HOST is set to $DB_HOST, using 'database' (Docker service name) for internal connection"
-    DB_HOST=database
-    export DB_HOST=database
-fi
-
-# Always use port 3306 for internal Docker network connections (not the external mapped port like 3309)
-if [ -z "$DB_PORT" ] || [ "$DB_PORT" = "3309" ]; then
-  echo "Using port 3306 for internal Docker network connection"
+if [ -z "$DB_PORT" ]; then
   DB_PORT=3306
-  export DB_PORT=3306
+  export DB_PORT
 fi
 
-## check for DB up before starting the panel
-echo "Checking database status."
-echo "Attempting to connect to database at $DB_HOST:$DB_PORT"
-until nc -z -v -w5 $DB_HOST $DB_PORT 2>&1
-do
+echo "== Waiting for database =="
+until nc -z -w5 "$DB_HOST" "$DB_PORT"; do
   echo "Waiting for database connection..."
-  # wait for 1 seconds before check again
   sleep 1
 done
-echo "Database connection established!"
+echo "Database is up"
 
-## check if storage symlink exists, if not create it
+echo "== Storage setup =="
+
+# Storage symlink
 if [ ! -L /app/public/storage ]; then
-  echo -e "Creating storage symlink."
   rm -rf /app/public/storage
   ln -s /app/storage/app/public /app/public/storage
-  echo -e "Storage symlink created."
-else
-  echo -e "Storage symlink already exists."
 fi
 
-## create necessary storage directories
-echo -e "Creating storage directories."
-mkdir -p /app/storage/app/public
-mkdir -p /app/storage/framework/cache/data
-mkdir -p /app/storage/framework/sessions
-mkdir -p /app/storage/framework/views
-mkdir -p /app/storage/framework/testing
-mkdir -p /app/storage/logs
-echo -e "Storage directories created."
+# Storage structure
+mkdir -p \
+  /app/storage/app/public \
+  /app/storage/framework/{cache/data,sessions,views,testing} \
+  /app/storage/logs
 
-## set storage permissions to 777 and user nginx:nginx
-echo -e "Setting storage permissions."
-chmod -R 755 /app/storage/* /app/bootstrap/cache/
-chown -R nginx:nginx /app/*
+# Permissions (no recursive chown again)
+find /app/storage /app/bootstrap/cache -type d -exec chmod 755 {} \;
+find /app/storage /app/bootstrap/cache -type f -exec chmod 644 {} \;
+chmod -R 775 /app/storage/logs
 
-## make sure the db is set up
-echo -e "Migrating and Seeding D.B"
+echo "== Running migrations =="
 php artisan migrate --seed --force
 
-## start cronjobs for the queue
-echo -e "Starting cron jobs."
+echo "== Starting cron =="
 crond -L /var/log/crond -l 5
 
-echo -e "Starting supervisord."
+echo "== Starting supervisord =="
 exec "$@"
