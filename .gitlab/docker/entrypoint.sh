@@ -11,7 +11,7 @@ mkdir -p \
   /app/bootstrap/cache
 
 # Ownership (ONLY writable paths)
-chown -R nginx:nginx \
+chown -R www-data:www-data \
   /app/storage \
   /app/bootstrap/cache \
   /var/log/nginx \
@@ -50,9 +50,7 @@ mkdir -p \
   /app/storage/logs
 
 # Permissions (no recursive chown again)
-find /app/storage /app/bootstrap/cache -type d -exec chmod 755 {} \;
-find /app/storage /app/bootstrap/cache -type f -exec chmod 644 {} \;
-chmod -R 775 /app/storage/logs
+chmod -R 775 /app/storage /app/bootstrap/cache
 
 echo "== Running migrations =="
 php artisan migrate --seed --force
