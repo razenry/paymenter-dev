@@ -11,7 +11,7 @@ mkdir -p \
   /app/bootstrap/cache
 
 # Ownership (ONLY writable paths)
-chown -R www-data:www-data \
+chown -R nginx:nginx \
   /app/storage \
   /app/bootstrap/cache \
   /var/log/nginx \
