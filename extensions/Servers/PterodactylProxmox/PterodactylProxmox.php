@@ -62,7 +62,7 @@ class PterodactylProxmox extends Server
         if (!$response->successful()) {
             $body = $response->json();
             logger()->debug('[pterodactyl] failed to execute api call', $body['errors']);
-            throw new Exception($body['errors'][0]['detail']);
+            throw new DisplayException($body['errors'][0]['detail']);
         }
 
         return $response->json() ?? [];
@@ -315,7 +315,7 @@ class PterodactylProxmox extends Server
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
-            throw new Exception('Server already exists');
+            throw new DisplayException('Server already exists');
         }
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
@@ -348,7 +348,7 @@ class PterodactylProxmox extends Server
 
         $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
         if (!isset($eggData['attributes'])) {
-            throw new Exception('Could not fetch egg data');
+            throw new DisplayException('Could not fetch egg data');
         }
         $environment = [];
         foreach ($eggData['attributes']['relationships']['variables']['data'] as $variable) {
@@ -420,7 +420,7 @@ class PterodactylProxmox extends Server
             $response = $this->request('/api/application/servers/external/' . $id);
         } catch (Exception $e) {
             if ($failIfNotFound) {
-                throw new Exception('Server not found');
+                throw new DisplayException('Server not found');
             } else {
                 return false;
             }

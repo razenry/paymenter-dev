@@ -62,7 +62,7 @@ class Pterodactyl extends Server
         if (!$response->successful()) {
             $body = $response->json();
             logger()->debug('[pterodactyl] failed to execute api call', $body['errors']);
-            throw new Exception($body['errors'][0]['detail']);
+            throw new DisplayException($body['errors'][0]['detail']);
         }
 
         return $response->json() ?? [];
@@ -314,7 +314,7 @@ class Pterodactyl extends Server
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
-            throw new Exception('Server already exists');
+            throw new DisplayException('Server already exists');
         }
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
@@ -347,7 +347,7 @@ class Pterodactyl extends Server
 
         $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
         if (!isset($eggData['attributes'])) {
-            throw new Exception('Could not fetch egg data');
+            throw new DisplayException('Could not fetch egg data');
         }
         $environment = [];
         foreach ($eggData['attributes']['relationships']['variables']['data'] as $variable) {
@@ -418,7 +418,7 @@ class Pterodactyl extends Server
                 'error' => $e->getMessage(),
             ]);
 
-            throw new Exception('Server creation failed: ' . $e->getMessage());
+            throw new DisplayException('Server creation failed: ' . $e->getMessage());
         }
 
         return [
@@ -442,7 +442,7 @@ class Pterodactyl extends Server
                 $nodes_by_id = $nodes->mapWithKeys(fn($node) => [$node['attributes']['id'] => $node['attributes']]);
 
                 if (!$nodes_by_id->has($settings['node'])) {
-                    throw new Exception('Node is not suitable for deployment.');
+                    throw new DisplayException('Node is not suitable for deployment.');
                 }
                 $node = $nodes_by_id->get($settings['node']);
                 $availablePorts = collect($node['relationships']['allocations']['data']);
@@ -455,7 +455,7 @@ class Pterodactyl extends Server
                         ]
                     );
                 if ($availablePorts->isEmpty()) {
-                    throw new Exception('No available allocations found on the selected node.');
+                    throw new DisplayException('No available allocations found on the selected node.');
                 }
                 $allocation = $availablePorts->first();
                 $environment['SERVER_PORT'] = $allocation['port'];
@@ -504,17 +504,17 @@ class Pterodactyl extends Server
                 }
 
                 if (empty($ports)) {
-                    throw new Exception('Invalid port array format');
+                    throw new DisplayException('Invalid port array format');
                 }
 
                 $port_array = ['NONE' => $ports];
             }
         } catch (Exception $e) {
-            throw new Exception('Invalid port array input');
+            throw new DisplayException('Invalid port array input');
         }
 
         if (!is_array($port_array)) {
-            throw new Exception('Port array must be an array');
+            throw new DisplayException('Port array must be an array');
         }
 
         $nodes = $this->request('/api/application/nodes/deployable', 'get', [
@@ -529,7 +529,7 @@ class Pterodactyl extends Server
         if ($settings['node']) {
             // If the product's node id is not in the deployable nodes array, throw error.
             if (!$nodes_by_id->has($settings['node'])) {
-                throw new Exception('Node is not suitable for deployment.');
+                throw new DisplayException('Node is not suitable for deployment.');
             }
 
             $node = $nodes_by_id->get($settings['node']);
@@ -549,7 +549,7 @@ class Pterodactyl extends Server
             }
 
             if (count($availablePorts) < $free_allocations_needed) {
-                throw new Exception("Not enough allocations found for deployment. Found: {$availablePorts->count()}, Required: {$free_allocations_needed}");
+                throw new DisplayException("Not enough allocations found for deployment. Found: {$availablePorts->count()}, Required: {$free_allocations_needed}");
             }
         } else {
             foreach ($nodes as $index => $node) {
@@ -571,7 +571,7 @@ class Pterodactyl extends Server
                 if (count($availablePorts) < $free_allocations_needed) {
                     // If this was last viable node, throw error
                     if ($index == $nodes->count() - 1) {
-                        throw new Exception('No nodes with suitable allocations found for deployment');
+                        throw new DisplayException('No nodes with suitable allocations found for deployment');
                     }
 
                     // Else move onto next viable node
@@ -593,7 +593,7 @@ class Pterodactyl extends Server
                             $allocation = $availablePorts->random();
                         }
                         if (!$allocation) {
-                            throw new Exception('Could not find a port to assign');
+                            throw new DisplayException('Could not find a port to assign');
                         }
                     }
                     $allocations[$key][] = $allocation;
@@ -612,7 +612,7 @@ class Pterodactyl extends Server
                         $allocation = $availablePorts->random();
                     }
                     if (!$allocation) {
-                        throw new Exception('Could not find a port to assign');
+                        throw new DisplayException('Could not find a port to assign');
                     }
                 }
                 $allocations[$key] = $allocation;
@@ -663,7 +663,7 @@ class Pterodactyl extends Server
             $response = $this->request('/api/application/servers/external/' . $id);
         } catch (Exception $e) {
             if ($failIfNotFound) {
-                throw new Exception('Server not found');
+                throw new DisplayException('Server not found');
             } else {
                 return false;
             }
@@ -734,7 +734,7 @@ class Pterodactyl extends Server
         $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
 
         if (!isset($eggData['attributes'])) {
-            throw new Exception('Could not fetch egg data');
+            throw new DisplayException('Could not fetch egg data');
         }
 
         $environment = [];
