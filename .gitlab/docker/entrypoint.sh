@@ -10,13 +10,6 @@ mkdir -p \
   /app/storage \
   /app/bootstrap/cache
 
-# Ownership (ONLY writable paths)
-chown -R nginx:nginx \
-  /app/storage \
-  /app/bootstrap/cache \
-  /var/log/nginx \
-  /var/run/nginx
-
 echo "== Loading environment =="
 if [ -f /app/.env ]; then
   echo "Found existing /app/.env"
@@ -49,11 +42,20 @@ mkdir -p \
   /app/storage/framework/{cache/data,sessions,views,testing} \
   /app/storage/logs
 
-# Permissions (no recursive chown again)
-chmod -R 775 /app/storage /app/bootstrap/cache
 
 echo "== Running migrations =="
 php artisan migrate --seed --force
+
+# Ownership (ONLY writable paths)
+chown -R nginx:nginx \
+  /app/storage \
+  /app/bootstrap/cache \
+  /var/log/nginx \
+  /var/run/nginx
+
+# Permissions (no recursive chown again)
+chmod -R 775 /app/storage /app/bootstrap/cache
+
 
 echo "== Starting cron =="
 crond -L /var/log/crond -l 5
