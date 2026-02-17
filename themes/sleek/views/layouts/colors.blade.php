@@ -38,30 +38,62 @@
 
 <style>
     :root {
-        --color-primary: {{ $lightColors['primary'] }};
-        --color-secondary: {{ $lightColors['secondary'] }};
-        --color-neutral: {{ $lightColors['neutral'] }};
-        --color-base: {{ $lightColors['base'] }};
-        --color-muted: {{ $lightColors['muted'] }};
-        --color-inverted: {{ $lightColors['inverted'] }};
+        --color-primary:
+            {{ $lightColors['primary'] }}
+        ;
+        --color-secondary:
+            {{ $lightColors['secondary'] }}
+        ;
+        --color-neutral:
+            {{ $lightColors['neutral'] }}
+        ;
+        --color-base:
+            {{ $lightColors['base'] }}
+        ;
+        --color-muted:
+            {{ $lightColors['muted'] }}
+        ;
+        --color-inverted:
+            {{ $lightColors['inverted'] }}
+        ;
         --color-success: 142 76% 36%;
         --color-error: 0 85% 65%;
         --color-warning: 38 100% 50%;
         --color-inactive: 220 15% 40%;
         --color-info: 195 100% 50%;
-        --color-background: {{ $lightColors['background'] }};
-        --color-background-secondary: {{ $lightColors['background-secondary'] }};
+        --color-background:
+            {{ $lightColors['background'] }}
+        ;
+        --color-background-secondary:
+            {{ $lightColors['background-secondary'] }}
+        ;
     }
 
     .dark {
-        --color-primary: {{ $darkColors['primary'] }};
-        --color-secondary: {{ $darkColors['secondary'] }};
-        --color-neutral: {{ $darkColors['neutral'] }};
-        --color-base: {{ $darkColors['base'] }};
-        --color-muted: {{ $darkColors['muted'] }};
-        --color-inverted: {{ $darkColors['inverted'] }};
-        --color-background: {{ $darkColors['background'] }};
-        --color-background-secondary: {{ $darkColors['background-secondary'] }};
+        --color-primary:
+            {{ $darkColors['primary'] }}
+        ;
+        --color-secondary:
+            {{ $darkColors['secondary'] }}
+        ;
+        --color-neutral:
+            {{ $darkColors['neutral'] }}
+        ;
+        --color-base:
+            {{ $darkColors['base'] }}
+        ;
+        --color-muted:
+            {{ $darkColors['muted'] }}
+        ;
+        --color-inverted:
+            {{ $darkColors['inverted'] }}
+        ;
+        --color-background:
+            {{ $darkColors['background'] }}
+        ;
+        --color-background-secondary:
+            {{ $darkColors['background-secondary'] }}
+        ;
     }
 
     :root {
@@ -231,28 +263,83 @@
         border-color: var(--color-border) !important;
         box-shadow: 0 0 0 1px var(--color-border-focus);
         --tw-ring-color: var(--color-border-ring);
-        --tw-ring-offset-color: hsl(var(--color-background));
-        --tw-ring-offset-width: 2px;
+        --tw-ring-offset-color: transparent;
+        --tw-ring-offset-width: 0px;
     }
 </style>
 
 @if (request()->is('admin*'))
     <style>
         :root {
-            --color-primary: {{ $darkColors['primary'] }};
-            --color-secondary: {{ $darkColors['secondary'] }};
-            --color-neutral: {{ $darkColors['neutral'] }};
-            --color-base: {{ $darkColors['base'] }};
-            --color-muted: {{ $darkColors['muted'] }};
-            --color-inverted: {{ $darkColors['inverted'] }};
-            --color-background: {{ $darkColors['background'] }};
-            --color-background-secondary: {{ $darkColors['background-secondary'] }};
+            --color-primary:
+                {{ $darkColors['primary'] }}
+            ;
+            --color-secondary:
+                {{ $darkColors['secondary'] }}
+            ;
+            --color-neutral:
+                {{ $darkColors['neutral'] }}
+            ;
+            --color-base:
+                {{ $darkColors['base'] }}
+            ;
+            --color-muted:
+                {{ $darkColors['muted'] }}
+            ;
+            --color-inverted:
+                {{ $darkColors['inverted'] }}
+            ;
+            --color-background:
+                {{ $darkColors['background'] }}
+            ;
+            --color-background-secondary:
+                {{ $darkColors['background-secondary'] }}
+            ;
         }
 
         :root,
         body {
             color-scheme: dark;
             background-color: hsl({{ $darkColors['background'] }});
+            color: hsl({{ $darkColors['base'] }});
+        }
+
+        .fi-select-input-option span,
+        .fi-dropdown-list-item span {
+            color: hsl({{ $darkColors['base'] }}) !important;
+        }
+
+        .fi-dropdown-list-item:hover,
+        .fi-dropdown-list-item:focus,
+        .fi-select-input-option:hover {
+            background-color: hsla(0, 0%, 100%, 0.08) !important;
+            cursor: pointer !important;
+        }
+
+        .fi-dropdown-list-item:hover span,
+        .fi-select-input-option:hover span {
+            color: hsl({{ $darkColors['primary'] }}) !important;
+        }
+
+        .fi-input-wrp,
+        .fi-select-input,
+        .fi-fo-select select,
+        .fi-dropdown-panel {
+            background-color: hsl({{ $darkColors['background-secondary'] }}) !important;
+            border: 1px solid hsla(0, 0%, 100%, 0.1) !important;
+            --tw-ring-offset-width: 0px !important;
+            --tw-ring-offset-color: transparent !important;
+            --tw-ring-color: transparent !important;
+        }
+
+        .fi-dropdown-panel {
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .fi-input-wrp:focus-within {
+            border-color: hsl({{ $darkColors['primary'] }}) !important;
+            --tw-ring-color: hsla(0, 0%, 100%, 0.05) !important;
+            --tw-ring-width: 1px !important;
         }
     </style>
 @endif

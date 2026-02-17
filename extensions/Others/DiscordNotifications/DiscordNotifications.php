@@ -118,30 +118,47 @@ class DiscordNotifications extends Extension
 
     private function updatedEvent($event, $model)
     {
+        $m = $event->{$model};
         $changedFields = [];
+
+        // Add standard context fields
         $changedFields[] = [
-            'name' => 'ID',
-            'value' => $model === 'user'
-                ? $event->{$model}->name
-                : $this->mapId($event->{$model}->id, $model . '_id'),
+            'name' => ucfirst($model),
+            'value' => $model === 'user' ? $m->name : $this->mapId($m->id, $model . '_id'),
             'inline' => true,
         ];
-        foreach ($event->{$model}->getChanges() as $field => $value) {
+
+        if (isset($m->user_id)) {
+            $changedFields[] = [
+                'name' => 'User',
+                'value' => '[' . $m->user->name . '](' . UserResource::getUrl('edit', ['record' => $m->user_id]) . ')',
+                'inline' => true,
+            ];
+        }
+
+        if ($model === 'service' && isset($m->product)) {
+            $changedFields[] = [
+                'name' => 'Product',
+                'value' => $m->product->name,
+                'inline' => true,
+            ];
+        }
+
+        foreach ($m->getChanges() as $field => $value) {
             if (!in_array($field, ['created_at', 'updated_at', 'password', 'remember_token'])) {
                 if (!is_string($value)) {
                     $value = json_encode($value);
                 }
-                // Replace _ with space and capitalize the first letter
                 $changedFields[] = [
-                    'name' => ucfirst(str_replace('_', ' ', $field)),
-                    'value' => $event->{$model}->getOriginal($field) . ' -> ' . $value,
+                    'name' => 'Changed ' . ucfirst(str_replace('_', ' ', $field)),
+                    'value' => '`' . ($m->getOriginal($field) ?? 'None') . '` → `' . ($value ?? 'None') . '`',
                     'inline' => true,
                 ];
             }
             if ($field === 'password') {
                 $changedFields[] = [
                     'name' => 'Password',
-                    'value' => '********',
+                    'value' => '******** (Updated)',
                     'inline' => true,
                 ];
             }
@@ -202,18 +219,18 @@ class DiscordNotifications extends Extension
     private function sendNotification($event, $eventType)
     {
         $fields = [
-            'User Updated' => fn ($event) => $this->updatedEvent($event, 'user'),
-            'User Created' => fn ($event) => $this->userCreated($event->user),
-            'Order Created' => fn ($event) => $this->orderCreated($event->order),
-            'Order Updated' => fn ($event) => $this->updatedEvent($event, 'order'),
-            'Invoice Created' => fn ($event) => $this->invoiceCreated($event->invoice),
-            'Invoice Updated' => fn ($event) => $this->updatedEvent($event, 'invoice'),
-            'Invoice Paid' => fn ($event) => $this->createdEvent($event, 'invoice', ['id']),
-            'Ticket Created' => fn ($event) => $this->createdEvent($event, 'ticket', ['id', 'user_id']),
-            'Ticket Updated' => fn ($event) => $this->updatedEvent($event, 'ticket'),
-            'Ticket Replied' => fn ($event) => $this->createdEvent($event, 'ticketMessage', ['ticket_id', 'message']),
-            'Service Created' => fn ($event) => $this->serviceCreated($event->service),
-            'Service Updated' => fn ($event) => $this->updatedEvent($event, 'service'),
+            'User Updated' => fn($event) => $this->updatedEvent($event, 'user'),
+            'User Created' => fn($event) => $this->userCreated($event->user),
+            'Order Created' => fn($event) => $this->orderCreated($event->order),
+            'Order Updated' => fn($event) => $this->updatedEvent($event, 'order'),
+            'Invoice Created' => fn($event) => $this->invoiceCreated($event->invoice),
+            'Invoice Updated' => fn($event) => $this->updatedEvent($event, 'invoice'),
+            'Invoice Paid' => fn($event) => $this->invoicePaid($event->invoice),
+            'Ticket Created' => fn($event) => $this->createdEvent($event, 'ticket', ['id', 'user_id']),
+            'Ticket Updated' => fn($event) => $this->updatedEvent($event, 'ticket'),
+            'Ticket Replied' => fn($event) => $this->createdEvent($event, 'ticketMessage', ['ticket_id', 'message']),
+            'Service Created' => fn($event) => $this->serviceCreated($event->service),
+            'Service Updated' => fn($event) => $this->updatedEvent($event, 'service'),
         ];
 
         // Check if the event type is valid
@@ -226,16 +243,24 @@ class DiscordNotifications extends Extension
         $pingType = $this->config('ping_type');
         $pingId = $this->config('ping_id');
 
+        $color = 0x3498DB; // Default Blue
+        if (str_contains($eventType, 'Created') || str_contains($eventType, 'Paid')) {
+            $color = 0x2ECC71; // Green
+        } elseif (str_contains($eventType, 'Updated') || str_contains($eventType, 'Replied')) {
+            $color = 0xF1C40F; // Yellow/Orange
+        }
+
         $message = [
             'content' => ' ',
             'embeds' => [
                 [
-                    'title' => ucfirst(str_replace('_', ' ', $eventType)),
-                    'description' => "A new event has occurred: {$eventType}",
+                    'title' => '🔔 ' . $eventType,
+                    'description' => "A monitoring alert has been triggered.",
                     'fields' => $fields,
-                    'color' => 0x00FF00,
+                    'color' => $color,
                     'footer' => [
-                        'text' => 'Paymenter Notifications',
+                        'text' => 'Paymenter Automated Notifications',
+                        'icon_url' => 'https://raznar.id/icons/logo.webp',
                     ],
                     'timestamp' => now()->toIso8601String(),
                 ],
@@ -346,26 +371,57 @@ class DiscordNotifications extends Extension
     {
         $fields = [
             [
-                'name' => 'ID',
+                'name' => 'Invoice',
                 'value' => $this->mapId($invoice->id, 'invoice_id'),
                 'inline' => true,
             ],
             [
                 'name' => 'User',
-                'value' => '[User ' . $invoice->user->name . '](' . UserResource::getUrl('edit', ['record' => $invoice->user_id]) . ')',
+                'value' => '[' . $invoice->user->name . '](' . UserResource::getUrl('edit', ['record' => $invoice->user_id]) . ')',
                 'inline' => true,
             ],
             [
                 'name' => 'Total',
-                'value' => (string) $invoice->formattedTotal,
+                'value' => '**' . (string) $invoice->formattedTotal . '**',
                 'inline' => true,
             ],
         ];
 
-        foreach ($invoice->items as $item) {
+        foreach ($invoice->items->take(5) as $item) {
             $fields[] = [
                 'name' => $item->description,
                 'value' => $item->quantity . ' x ' . $item->formattedPrice,
+                'inline' => true,
+            ];
+        }
+
+        return $fields;
+    }
+
+    private function invoicePaid(\App\Models\Invoice $invoice)
+    {
+        $fields = [
+            [
+                'name' => 'Invoice',
+                'value' => $this->mapId($invoice->id, 'invoice_id'),
+                'inline' => true,
+            ],
+            [
+                'name' => 'User',
+                'value' => '[' . $invoice->user->name . '](' . UserResource::getUrl('edit', ['record' => $invoice->user_id]) . ')',
+                'inline' => true,
+            ],
+            [
+                'name' => 'Amount Paid',
+                'value' => '✅ **' . (string) $invoice->formattedTotal . '**',
+                'inline' => true,
+            ],
+        ];
+
+        if ($invoice->paid_at) {
+            $fields[] = [
+                'name' => 'Payment Date',
+                'value' => $invoice->paid_at->format('M d, Y H:i'),
                 'inline' => true,
             ];
         }

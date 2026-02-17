@@ -37,8 +37,12 @@
   --color-border-ring: color-mix(in srgb, var(--color-border) 40%, transparent);
 }
 
-.fi-select-input .fi-select-input-option span {
-  color: var(--color-neutral)
+.fi-select-input-option span {
+  color: var(--color-base) !important;
+}
+
+.fi-select-input-option:hover {
+  cursor: pointer;
 }
 
 @layer base {
