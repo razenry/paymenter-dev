@@ -128,8 +128,8 @@ class CartItem extends Model
 
         // Apply-once logic
         if ($coupon->apply_once_only) {
-            $eligibleItems = $this->cart->items()
-                ->get()
+            $eligibleItems = $this->cart->items
+                ->sortBy('id')
                 ->filter(fn ($item) => empty($eligibleProductIds) || in_array($item->product->id, $eligibleProductIds));
 
             $firstEligibleItem = $eligibleItems->first();

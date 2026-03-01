@@ -23,6 +23,7 @@ class Coupon extends Model implements Auditable
         'new_users_only',
         'existing_users_only',
         'apply_once_only',
+        'applies_to',
     ];
 
     protected $casts = [
@@ -72,7 +73,7 @@ class Coupon extends Model implements Auditable
             throw new \InvalidArgumentException('Invalid type for coupon discount calculation');
         }
 
-        if (!in_array($this->applies_to, ['all', $type])) {
+        if (!in_array($this->applies_to ?? 'all', ['all', $type])) {
             logger()->info(' err 1');
 
             return 0;
