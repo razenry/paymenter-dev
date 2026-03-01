@@ -185,7 +185,7 @@ class Cart extends Component
                 // Determine the price to use
                 if ($item->isCouponApplicable()) {
                     // Lifetime or first-cycle-only coupon logic
-                    if (empty($cart->coupon->recurring) || $cart->coupon->recurring == 1) {
+                    if (empty($cart->coupon->recurring)) {
                         // Apply coupon only to first billing cycle (use original price for recurring)
                         $price = $item->price->original_price;
                     } else {

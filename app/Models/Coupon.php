@@ -92,14 +92,15 @@ class Coupon extends Model implements Auditable
             return 0;
         }
 
-        $orderCount = $user->orders()->count();
-        if ($this->new_users_only && $orderCount > 0) {
+        $paidInvoicesCount = $user->invoices()->where('status', 'paid')->count();
+
+        if ($this->new_users_only && $paidInvoicesCount > 0) {
             logger()->info(' err 4');
 
             return 0;
         }
 
-        if ($this->existing_users_only && $orderCount < 1) {
+        if ($this->existing_users_only && $paidInvoicesCount < 1) {
             logger()->info(' err 5');
 
             return 0;

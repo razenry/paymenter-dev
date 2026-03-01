@@ -167,6 +167,21 @@ class Cart
             throw new DisplayException('You have already used this coupon the maximum number of times allowed');
         }
 
+        $user = Auth::user();
+        $paidInvoicesCount = $user->invoices()->where('status', 'paid')->count();
+
+        if ($coupon->new_users_only && $paidInvoicesCount > 0) {
+            throw new DisplayException('This coupon is only valid for new users');
+        }
+
+        if ($coupon->existing_users_only && $paidInvoicesCount < 1) {
+            throw new DisplayException('This coupon is only valid for existing users');
+        }
+
+        if (!$coupon->isAllowedForRole($user->role_id)) {
+            throw new DisplayException('This coupon is not valid for your account role');
+        }
+
         return $coupon;
     }
 
