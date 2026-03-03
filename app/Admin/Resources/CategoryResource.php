@@ -18,6 +18,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Components\Form;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -40,36 +41,38 @@ class CategoryResource extends Resource
     {
         return $schema
             ->components([
-                TextInput::make('name')
-                    ->required()
-                    ->maxLength(255)
-                    ->live(onBlur: true)
-                    ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
-                        if (($get('slug') ?? '') !== Str::slug($old)) {
-                            return;
-                        }
+                Form::make([
+                    TextInput::make('name')
+                        ->required()
+                        ->maxLength(255)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
+                            if (($get('slug') ?? '') !== Str::slug($old)) {
+                                return;
+                            }
 
-                        $set('slug', Str::slug($state));
-                    }),
-                TextInput::make('slug')
-                    ->required(),
-                RichEditor::make('description')
-                    ->required(),
-                Select::make('parent_id')
-                    ->relationship('parent', 'name')
-                    ->searchable()
-                    ->preload()
-                    ->label('Parent Category')
-                    // Disallow having same category as it's own parent
-                    ->disableOptionWhen(fn (string $value, ?Category $record): bool => $record && (int) $value === $record->id),
-                FileUpload::make('image')
-                    ->label('Image')
-                    ->nullable()
-                    ->visibility('public')
-                    ->disk('public')
-                    ->acceptedFileTypes(['image/*'])
-                    ->columnSpanFull(),
-            ])->columns(2);
+                            $set('slug', Str::slug($state));
+                        }),
+                    TextInput::make('slug')
+                        ->required(),
+                    RichEditor::make('description')
+                        ->required(),
+                    Select::make('parent_id')
+                        ->relationship('parent', 'name')
+                        ->searchable()
+                        ->preload()
+                        ->label('Parent Category')
+                        // Disallow having same category as it's own parent
+                        ->disableOptionWhen(fn(string $value, ?Category $record): bool => $record && (int) $value === $record->id),
+                    FileUpload::make('image')
+                        ->label('Image')
+                        ->nullable()
+                        ->visibility('public')
+                        ->disk('public')
+                        ->acceptedFileTypes(['image/*'])
+                        ->columnSpanFull(),
+                ])->columns(2),
+            ]);
     }
 
     public static function table(Table $table): Table

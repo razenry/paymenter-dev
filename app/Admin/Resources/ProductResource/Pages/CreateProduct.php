@@ -7,11 +7,14 @@ use App\Helpers\ExtensionHelper;
 use App\Models\Server;
 use Arr;
 use Filament\Resources\Pages\CreateRecord;
+use Filament\Support\Enums\Width;
 use Illuminate\Database\Eloquent\Model;
 
 class CreateProduct extends CreateRecord
 {
     protected static string $resource = ProductResource::class;
+
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function handleRecordCreation(array $data): Model
     {

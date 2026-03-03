@@ -13,11 +13,14 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Filament\Support\Enums\Width;
 use Illuminate\Support\Str;
 
 class EditProduct extends EditRecord
 {
     protected static string $resource = ProductResource::class;
+
+    protected Width|string|null $maxContentWidth = Width::Full;
 
     protected function getHeaderActions(): array
     {
