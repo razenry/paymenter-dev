@@ -55,14 +55,9 @@ class ProductResource extends Resource
     {
         return $schema
             ->components([
-                Tabs::make('Tabs')
-                    ->vertical()
-                    ->persistTabInQueryString()
+                Tabs::make()
                     ->columnSpanFull()
-                    ->extraAttributes([
-                        'class' => 'mb-14 gap-x-12',
-                    ])
-                    ->tabs([
+                    ->schema([
                         Tab::make('General')
                             ->columns(2)
                             ->schema([
