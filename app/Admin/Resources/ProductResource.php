@@ -55,132 +55,129 @@ class ProductResource extends Resource
     {
         return $schema
             ->components([
-                Form::make([
-                    Tabs::make('Tabs')
-                        ->vertical()
-                        ->persistTabInQueryString()
-                        ->columnSpanFull()
-                        ->extraAttributes([
-                            'class' => 'mb-14 gap-x-12',
-                        ])
-                        ->tabs([
-                            Tab::make('General')
-                                ->columns(2)
-                                ->schema([
-                                    TextInput::make('name')
-                                        ->required()
-                                        ->maxLength(255)
-                                        ->live(onBlur: true)
-                                        ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
-                                            if (($get('slug') ?? '') !== Str::slug($old)) {
-                                                return;
+                Tabs::make('Tabs')
+                    ->vertical()
+                    ->persistTabInQueryString()
+                    ->columnSpanFull()
+                    ->extraAttributes([
+                        'class' => 'mb-14 gap-x-12',
+                    ])
+                    ->tabs([
+                        Tab::make('General')
+                            ->columns(2)
+                            ->schema([
+                                TextInput::make('name')
+                                    ->required()
+                                    ->maxLength(255)
+                                    ->live(onBlur: true)
+                                    ->afterStateUpdated(function (Get $get, Set $set, ?string $old, ?string $state) {
+                                        if (($get('slug') ?? '') !== Str::slug($old)) {
+                                            return;
+                                        }
+
+                                        $set('slug', Str::slug($state));
+                                    }),
+                                TextInput::make('slug')->required()->unique(ignoreRecord: true),
+                                TextInput::make('stock')->integer()->nullable(),
+                                TextInput::make('per_user_limit')->integer()->nullable(),
+                                Select::make('allow_quantity')->options([
+                                    'disabled' => 'No',
+                                    'separated' => 'Separated',
+                                    'combined' => 'Combined',
+                                ])->default('separated')
+                                    ->required(),
+                                Textarea::make('email_template')
+                                    ->hint('This snippet will be used in the email template.')
+                                    ->nullable(),
+                                Checkbox::make('hidden')
+                                    ->label('Hide product')
+                                    ->hint('Hide the product from the client area.'),
+
+                                RichEditor::make('description')->nullable()->columnSpanFull(),
+                                FileUpload::make('image')
+                                    ->label('Image')
+                                    ->nullable()
+                                    ->visibility('public')
+                                    ->imageEditor()
+                                    ->image()
+                                    ->disk('public')
+                                    ->acceptedFileTypes(['image/*']),
+                                Select::make('category_id')
+                                    ->relationship('category', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->createOptionForm(fn(Schema $schema) => CategoryResource::form($schema))
+                                    ->required(),
+                            ]),
+                        Tab::make('Pricing')
+                            ->schema([self::plan()]),
+
+                        Tab::make('Upgrades')
+                            ->schema([
+                                // Select input for the products this product can upgrade to (hasmany relationship)
+                                Select::make('upgrades')
+                                    ->label('Upgrades')
+                                    ->relationship('upgrades', 'name', ignoreRecord: true)
+                                    ->multiple()
+                                    ->preload()
+                                    ->placeholder('Select the products that this product can upgrade to'),
+                            ]),
+
+                        Tab::make('Server')
+                            ->schema([
+                                Select::make('server_id')
+                                    ->relationship('server', 'name')
+                                    ->searchable()
+                                    ->preload()
+                                    ->hintAction(
+                                        Action::make('refresh')
+                                            ->label('Refresh')
+                                            ->action(fn() => Cache::set('product_config', null, 0))
+                                            ->hidden(fn(Get $get) => $get('server_id') === null)
+                                    )
+                                    ->live()
+                                    ->afterStateUpdated(fn(Select $component) => $component
+                                        ->getContainer()
+                                        ->getComponent('extension_settings', withHidden: true)
+                                        ->getChildSchema()
+                                        ->fill()),
+
+                                Grid::make()
+                                    ->hidden(fn(Get $get) => $get('server_id') === null)
+                                    ->columns(2)
+                                    ->key('extension_settings')
+                                    ->schema(
+                                        function (Get $get, Component $livewire) {
+                                            $server = $get('server_id');
+                                            if ($server == null) {
+                                                return [];
+                                            }
+                                            $settings = [];
+
+                                            try {
+                                                foreach (ExtensionHelper::getProductConfigOnce(Server::findOrFail($server), $get('settings')) as $setting) {
+                                                    // Easier to use dot notation for settings
+                                                    $setting['name'] = 'settings.' . $setting['name'];
+                                                    $settings[] = FilamentInput::convert($setting);
+                                                }
+                                            } catch (Exception $e) {
+                                                $settings[] = TextEntry::make('error')->state($e->getMessage());
                                             }
 
-                                            $set('slug', Str::slug($state));
-                                        }),
-                                    TextInput::make('slug')->required()->unique(ignoreRecord: true),
-                                    TextInput::make('stock')->integer()->nullable(),
-                                    TextInput::make('per_user_limit')->integer()->nullable(),
-                                    Select::make('allow_quantity')->options([
-                                        'disabled' => 'No',
-                                        'separated' => 'Separated',
-                                        'combined' => 'Combined',
-                                    ])->default('separated')
-                                        ->required(),
-                                    Textarea::make('email_template')
-                                        ->hint('This snippet will be used in the email template.')
-                                        ->nullable(),
-                                    Checkbox::make('hidden')
-                                        ->label('Hide product')
-                                        ->hint('Hide the product from the client area.'),
+                                            return $settings;
+                                        }
+                                    ),
 
-                                    RichEditor::make('description')->nullable()->columnSpanFull(),
-                                    FileUpload::make('image')
-                                        ->label('Image')
-                                        ->nullable()
-                                        ->visibility('public')
-                                        ->imageEditor()
-                                        ->image()
-                                        ->disk('public')
-                                        ->acceptedFileTypes(['image/*']),
-                                    Select::make('category_id')
-                                        ->relationship('category', 'name')
-                                        ->searchable()
-                                        ->preload()
-                                        ->createOptionForm(fn(Schema $schema) => CategoryResource::form($schema))
-                                        ->required(),
-                                ]),
-                            Tab::make('Pricing')
-                                ->schema([self::plan()]),
-
-                            Tab::make('Upgrades')
-                                ->schema([
-                                    // Select input for the products this product can upgrade to (hasmany relationship)
-                                    Select::make('upgrades')
-                                        ->label('Upgrades')
-                                        ->relationship('upgrades', 'name', ignoreRecord: true)
-                                        ->multiple()
-                                        ->preload()
-                                        ->placeholder('Select the products that this product can upgrade to'),
-                                ]),
-
-                            Tab::make('Server')
-                                ->schema([
-                                    Select::make('server_id')
-                                        ->relationship('server', 'name')
-                                        ->searchable()
-                                        ->preload()
-                                        ->hintAction(
-                                            Action::make('refresh')
-                                                ->label('Refresh')
-                                                ->action(fn() => Cache::set('product_config', null, 0))
-                                                ->hidden(fn(Get $get) => $get('server_id') === null)
-                                        )
-                                        ->live()
-                                        ->afterStateUpdated(fn(Select $component) => $component
-                                            ->getContainer()
-                                            ->getComponent('extension_settings', withHidden: true)
-                                            ->getChildSchema()
-                                            ->fill()),
-
-                                    Grid::make()
-                                        ->hidden(fn(Get $get) => $get('server_id') === null)
-                                        ->columns(2)
-                                        ->key('extension_settings')
-                                        ->schema(
-                                            function (Get $get, Component $livewire) {
-                                                $server = $get('server_id');
-                                                if ($server == null) {
-                                                    return [];
-                                                }
-                                                $settings = [];
-
-                                                try {
-                                                    foreach (ExtensionHelper::getProductConfigOnce(Server::findOrFail($server), $get('settings')) as $setting) {
-                                                        // Easier to use dot notation for settings
-                                                        $setting['name'] = 'settings.' . $setting['name'];
-                                                        $settings[] = FilamentInput::convert($setting);
-                                                    }
-                                                } catch (Exception $e) {
-                                                    $settings[] = TextEntry::make('error')->state($e->getMessage());
-                                                }
-
-                                                return $settings;
-                                            }
-                                        ),
-
-                                ]),
-                        ]),
-                ])->columnSpanFull(),
+                            ]),
+                    ]),
             ]);
     }
 
     public static function plan()
     {
-        return Repeater::make('plan')
+        return Repeater::make('plans')
             ->addActionLabel('Add new plan')
             ->relationship('plans')
-            ->name('name')
             ->reorderable()
             ->cloneable()
             ->collapsible()
