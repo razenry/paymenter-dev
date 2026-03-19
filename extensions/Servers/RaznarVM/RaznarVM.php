@@ -386,14 +386,6 @@ class RaznarVM extends Server
             // 3. Execute the upgrade
             logger()->debug('[raznarvm] Sending POST upgrade request', $upgradeData);
             $this->request("/api/admin/servers/external/{$service->id}/upgrade", 'post', $upgradeData);
-
-            // 4. Apply changes (Restart if server is running)
-            // Docs note: Upgrades are applied automatically when the server is started or restarted.
-            $status = strtolower($server['runtime_status'] ?? $server['status'] ?? '');
-            if (in_array($status, ['running', 'active', 'online'])) {
-                logger()->debug('[raznarvm] Triggering restart to apply queued upgrade');
-                $this->request("/api/admin/servers/external/{$service->id}/restart", 'post');
-            }
             
             logger()->debug('[raznarvm] Upgrade sequence processed');
         } catch (Exception $e) {
