@@ -268,8 +268,16 @@ class RaznarVM extends Server
     private function getServer($id, $failIfNotFound = true, $raw = false)
     {
         try {
-            $response = $this->request('/api/admin/servers/external/' . $id);
-            $data = $response['data'] ?? $response;
+            // Check if we have an internal ID stored
+            $internalId = Service::find($id)?->properties()->where('key', 'server')->first()?->value;
+            
+            if ($internalId) {
+                $response = $this->request('/api/servers/' . $internalId);
+                $data = $response['data'] ?? $response;
+            } else {
+                $response = $this->request('/api/admin/servers/external/' . $id);
+                $data = $response['data'] ?? $response;
+            }
         } catch (Exception $e) {
             if ($failIfNotFound) {
                 throw new DisplayException('Server not found');
@@ -328,22 +336,111 @@ class RaznarVM extends Server
     {
         $settings = array_merge($settings, $properties);
 
-        $updateData = [
-            'cpu' => (int) $settings['cpu'],
-            'memory' => (int) $settings['memory'],
+        // Fetch current resources from the API
+        $currentServer = $this->getServer($service->id, failIfNotFound: true, raw: true);
+        $serverId = $currentServer['id'];
+
+        $current = [
+            'cpu' => (int) ($currentServer['cpu'] ?? $currentServer['cores'] ?? 0),
+            'memory' => (int) ($currentServer['memory'] ?? 0),
+            'disk' => (int) ($currentServer['disk_size'] ?? 0),
         ];
 
-        if (isset($settings['max_traffic_in'])) {
-            $updateData['max_traffic_in'] = (int) $settings['max_traffic_in'];
-        }
-        if (isset($settings['max_traffic_out'])) {
-            $updateData['max_traffic_out'] = (int) $settings['max_traffic_out'];
-        }
+        $target = [
+            'cpu' => (int) ($settings['cpu'] ?? 0),
+            'memory' => (int) ($settings['memory'] ?? 0),
+            'disk' => (int) ($settings['disk_size'] ?? 1),
+        ];
 
-        $this->request('/api/admin/servers/external/' . $service->id, 'put', $updateData);
+        logger()->debug('[raznarvm] Starting server upgrade check', compact('current', 'target'));
+
+        $this->validateUpgradeResources($current, $target);
+
+        $diff = [
+            'cpu' => $target['cpu'] - $current['cpu'],
+            'memory' => $target['memory'] - $current['memory'],
+            'disk' => $target['disk'] - $current['disk'],
+        ];
+
+        if ($diff['cpu'] !== 0 || $diff['memory'] !== 0 || $diff['disk'] !== 0) {
+            logger()->debug('[raznarvm] Executing resource update sequence', $diff);
+
+            try {
+                // 1. Stop VM (following ExampleProxmoxPterodactyl.php)
+                logger()->debug('[raznarvm] Stopping VM for upgrade');
+                $this->request("/api/servers/{$serverId}/stop", 'post');
+
+                // 2. Update CPU/RAM
+                if ($diff['cpu'] !== 0 || $diff['memory'] !== 0) {
+                    $updateData = [
+                        'cores' => $target['cpu'],
+                        'memory' => $this->normalizeVmMemory($target['memory']),
+                    ];
+                    if (isset($settings['network_rate'])) {
+                        $updateData['network_rate'] = (int) $settings['network_rate'];
+                    }
+
+                    logger()->debug('[raznarvm] Updating core specs', $updateData);
+                    $this->request("/api/servers/{$serverId}", 'put', $updateData);
+                }
+
+                // 3. Increase Disk (using specialized increase endpoint)
+                if ($diff['disk'] > 0) {
+                    logger()->debug('[raznarvm] Increasing disk', ['increase_gb' => $diff['disk']]);
+                    $this->request("/api/servers/{$serverId}/disks/main/increase", 'post', [
+                        'size' => (int) $diff['disk'],
+                    ]);
+                }
+
+                logger()->debug('[raznarvm] Upgrade sequence complete');
+            } catch (Exception $e) {
+                logger()->error('[raznarvm] Upgrade sequence failed', ['error' => $e->getMessage()]);
+                // We attempt to start it back up even if something failed
+                $this->request("/api/servers/{$serverId}/start", 'post');
+                throw $e;
+            } finally {
+                // 4. Start VM
+                logger()->debug('[raznarvm] Starting VM');
+                $this->request("/api/servers/{$serverId}/start", 'post');
+            }
+        }
 
         return true;
     }
+
+    private function validateUpgradeResources(array &$current, array &$target): void
+    {
+        logger()->debug('[raznarvm] Validating upgrade (no downgrade allowed)');
+
+        if ($target['disk'] < 1) {
+            return;
+        }
+
+        if ($target['disk'] < $current['disk']) {
+            throw new DisplayException("You can't downgrade the disk!");
+        }
+
+        // Force target resources to be at least current state if requested upgrade is smaller
+        $target['cpu'] = max($target['cpu'], $current['cpu']);
+        $target['memory'] = max($target['memory'], $current['memory']);
+        $target['disk'] = max($target['disk'], $current['disk']);
+    }
+
+
+    private function normalizeVmMemory(int $memory): int
+    {
+        $normalized = ($memory / 1024) === (int) ($memory / 1024)
+            ? $memory
+            : (int) round($memory * 1.024);
+
+        logger()->debug('[raznarvm] Normalized memory output', [
+            'input' => $memory,
+            'output' => $normalized,
+        ]);
+
+        return $normalized;
+    }
+
 
     public function boot()
     {
