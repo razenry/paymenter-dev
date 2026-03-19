@@ -37,7 +37,6 @@ class DeployServer implements ShouldQueue
         logger()->debug('[raznarvm] background deployment job started', ['service_id' => $this->service->id]);
 
         $url = rtrim($this->host, '/') . '/api/admin/servers/deploy';
-
         try {
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $this->apiKey,
@@ -51,31 +50,12 @@ class DeployServer implements ShouldQueue
             logger()->debug('[raznarvm] deployment request accepted, waiting 5 seconds for initialization...');
             sleep(5);
 
-            $server = $response->json();
-            $serverId = $server['data']['id'] ?? $server['id'] ?? null;
+            $serverDetails = Http::withHeaders([
+                'Authorization' => 'Bearer ' . $this->apiKey,
+                'Accept' => 'application/json',
+            ])->get(rtrim($this->host, '/') . '/api/admin/servers/external/' . $this->service->id);
 
-            if (!$serverId) {
-                // Fallback: check by external ID if missing in direct response
-                $serverDetails = Http::withHeaders([
-                    'Authorization' => 'Bearer ' . $this->apiKey,
-                    'Accept' => 'application/json',
-                ])->get(rtrim($this->host, '/') . '/api/admin/servers/external/' . $this->service->id);
-
-                if ($serverDetails->successful()) {
-                    $details = $serverDetails->json();
-                    $serverId = $details['data']['id'] ?? $details['id'] ?? null;
-                }
-            }
-
-            if ($serverId) {
-                // Update service properties
-                $this->service->properties()->updateOrCreate(['key' => 'server'], ['value' => $serverId]);
-                
-                logger()->debug('[raznarvm] background deployment successful', [
-                    'service_id' => $this->service->id,
-                    'server_id' => $serverId
-                ]);
-            } else {
+            if (!$serverDetails->successful()) {
                 throw new Exception('Failed to obtain server ID after successful deployment');
             }
 
