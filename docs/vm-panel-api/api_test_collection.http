@@ -1,0 +1,177 @@
+@baseUrl = http://localhost:8080/api
+@authToken = YOUR_TOKEN_HERE
+@serverId = YOUR_SERVER_ID_HERE
+@hypervisorId = 1
+@userId = 2
+@locationId = 1
+
+### Health Check
+GET {{baseUrl}}/health
+Accept: application/json
+
+---
+
+### Authentication
+
+### Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "admin@example.com",
+    "password": "password123",
+    "remember": true
+}
+
+### Logout
+DELETE {{baseUrl}}/auth/logout
+Authorization: Bearer {{authToken}}
+
+---
+
+### Client API
+
+### List Servers
+GET {{baseUrl}}/client/servers?include_details=true&include_os=true
+Authorization: Bearer {{authToken}}
+
+### Get Server Details
+GET {{baseUrl}}/client/servers/{{serverId}}?include_details=true
+Authorization: Bearer {{authToken}}
+
+### Update Server
+PUT {{baseUrl}}/client/servers/{{serverId}}
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "name": "Updated Server Name",
+    "dns1": "1.1.1.1",
+    "dns2": "8.8.8.8"
+}
+
+### Start Server
+GET {{baseUrl}}/client/servers/{{serverId}}/console/start
+Authorization: Bearer {{authToken}}
+
+### Stop Server
+GET {{baseUrl}}/client/servers/{{serverId}}/console/stop
+Authorization: Bearer {{authToken}}
+
+### Enable VNC
+POST {{baseUrl}}/client/servers/{{serverId}}/vnc/enable
+Authorization: Bearer {{authToken}}
+
+---
+
+### Admin API
+
+### List Hypervisors
+GET {{baseUrl}}/admin/hypervisors
+Authorization: Bearer {{authToken}}
+
+### Create Hypervisor
+POST {{baseUrl}}/admin/hypervisors
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "name": "New Hypervisor",
+    "fqdn": "hv2.example.com",
+    "location_id": 1,
+    "max_server": 10,
+    "max_memory": 16384,
+    "https": true
+}
+
+### List Users
+GET {{baseUrl}}/admin/users
+Authorization: Bearer {{authToken}}
+
+### Create User
+POST {{baseUrl}}/admin/users
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "email": "newuser@example.com",
+    "username": "newuser",
+    "first_name": "New",
+    "last_name": "User",
+    "password": "StrongPassword123!",
+    "is_admin": false
+}
+
+### Generate SSO Token
+GET {{baseUrl}}/admin/users/{{userId}}/sso
+Authorization: Bearer {{authToken}}
+
+### List Locations
+GET {{baseUrl}}/admin/locations
+Authorization: Bearer {{authToken}}
+
+### List Images
+GET {{baseUrl}}/admin/images
+Authorization: Bearer {{authToken}}
+
+### Create Server (Direct)
+POST {{baseUrl}}/admin/servers
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "owner_id": 1,
+    "hypervisor_id": 1,
+    "network_id": 1,
+    "name": "Manual VM",
+    "cpu": 2,
+    "memory": 2048,
+    "max_traffic_in": 1000,
+    "max_traffic_out": 1000,
+    "dns1": "1.1.1.1",
+    "dns2": "8.8.8.8"
+}
+
+### Deploy Server (Automatic)
+POST {{baseUrl}}/admin/servers/deploy
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "location_id": 1,
+    "owner_id": 1,
+    "disk_size": 20,
+    "name": "Auto VM",
+    "cpu": 2,
+    "memory": 1024,
+    "max_traffic_in": 100,
+    "max_traffic_out": 100,
+    "dns1": "1.1.1.1"
+}
+
+### Get General Settings
+GET {{baseUrl}}/admin/settings/general
+Authorization: Bearer {{authToken}}
+
+### Get Retention Settings
+GET {{baseUrl}}/admin/settings/retention
+Authorization: Bearer {{authToken}}
+
+### Update Retention Settings
+POST {{baseUrl}}/admin/settings/retention
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "activity_log_retention_days": 30,
+    "job_retention_days": 7
+}
+
+### Test Mail Settings
+POST {{baseUrl}}/admin/settings/mail/test
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "to": "test@example.com"
+}
