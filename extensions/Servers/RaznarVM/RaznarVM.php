@@ -336,9 +336,8 @@ class RaznarVM extends Server
     {
         $settings = array_merge($settings, $properties);
 
-        // 1. Fetch current server details including disks to get the Disk ID
-        // Doc ref: GET /api/admin/servers/external/:id?include_disks=1
-        $response = $this->request("/api/admin/servers/external/{$service->id}?include_disks=1", 'get');
+        // 1. Fetch current server details (disk_id is included here)
+        $response = $this->request("/api/admin/servers/external/{$service->id}", 'get');
         $server = $response['data'] ?? $response ?? [];
 
         if (empty($server)) {
@@ -361,22 +360,18 @@ class RaznarVM extends Server
 
         $this->validateUpgradeResources($current, $target);
 
-        // 2. Prepare upgrade payload according to newest API docs
-        // Doc ref: POST /api/admin/servers/:id/upgrade
+        // 2. Prepare upgrade payload
         $upgradeData = [
             'cpu' => $target['cpu'],
             'memory' => $this->normalizeVmMemory($target['memory']),
             'network_rate' => (int) ($settings['network_rate'] ?? $server['network_rate'] ?? 0),
         ];
 
-        // Format disks array as required by the new API
-        $disks = $server['disks'] ?? [];
-        if (!empty($disks)) {
-            // Find the primary disk (usually labeled 'main' or the first one)
-            $mainDisk = collect($disks)->firstWhere('label', 'main') ?? $disks[0];
+        // Get disk_id directly from server data
+        if (isset($server['disk_id'])) {
             $upgradeData['disks'] = [
                 [
-                    'id' => (int) ($mainDisk['id'] ?? $mainDisk['disk_id'] ?? 0),
+                    'id' => (int) $server['disk_id'],
                     'size' => (int) $target['disk'],
                 ]
             ];
