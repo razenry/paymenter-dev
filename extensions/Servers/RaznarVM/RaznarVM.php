@@ -76,13 +76,14 @@ class RaznarVM extends Server
         }
 
         $body = $response->json();
-        if ($body === null) {
+        if (empty($body)) {
             $body = $response->body();
         }
 
         logger()->debug('[raznarvm] api call successful', [
             'url' => $url,
-            'response_type' => gettype($body)
+            'response_type' => gettype($body),
+            'raw_body' => $response->body()
         ]);
 
         return $body ?? [];
