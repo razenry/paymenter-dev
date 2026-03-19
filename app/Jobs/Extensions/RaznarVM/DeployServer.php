@@ -61,6 +61,21 @@ class DeployServer implements ShouldQueue
                 throw new Exception('Failed to obtain server ID after successful deployment');
             }
 
+            $detailsData = $serverDetails->json();
+            $serverId = $detailsData['data']['id'] ?? $detailsData['id'] ?? null;
+
+            if ($serverId) {
+                // Update service properties
+                $this->service->properties()->updateOrCreate(['key' => 'server'], ['value' => $serverId]);
+                
+                logger()->debug('[raznarvm] background deployment successful', [
+                    'service_id' => $this->service->id,
+                    'server_id' => $serverId
+                ]);
+            } else {
+                throw new Exception('Server ID not found in server details response');
+            }
+
         } catch (Exception $e) {
             logger()->error('[raznarvm] background deployment failed', [
                 'service_id' => $this->service->id,
