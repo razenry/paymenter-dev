@@ -49,14 +49,23 @@ class RaznarVM extends Server
     public function request($url, $method = 'get', $data = []): array
     {
         $req_url = rtrim($this->config('host'), '/') . $url;
+        logger()->debug('[raznarvm] executing api call', [
+            'url' => $url,
+            'method' => $method,
+            'data' => $data,
+        ]);
+
         $response = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->config('api_key'),
             'Accept' => 'application/json',
         ])->$method($req_url, $data);
 
         if (!$response->successful()) {
-            $body = $response->json();
-            logger()->debug('[raznarvm] failed to execute api call', ['errors' => $body]);
+            $body = $response->json() ?? [];
+            logger()->debug('[raznarvm] failed to execute api call', [
+                'status' => $response->status(),
+                'errors' => $body
+            ]);
             $errorMsg = $body['message'] ?? 'API Error';
             if (isset($body['errors']) && is_array($body['errors'])) {
                 $errorMsg = collect($body['errors'])->first() ?? $errorMsg;
@@ -64,7 +73,13 @@ class RaznarVM extends Server
             throw new DisplayException($errorMsg);
         }
 
-        return $response->json() ?? [];
+        $body = $response->json() ?? [];
+        logger()->debug('[raznarvm] api call successful', [
+            'url' => $url,
+            'response' => $body
+        ]);
+
+        return $body;
     }
 
     public function getProductConfig($values = []): array
@@ -173,6 +188,8 @@ class RaznarVM extends Server
             'is_admin' => false,
         ]);
 
+        logger()->debug('[raznarvm] created new user', ['user_id' => $newUser['data']['id'] ?? $newUser['id'] ?? 'unknown']);
+
         return $newUser['data'] ?? $newUser;
     }
 
@@ -216,6 +233,7 @@ class RaznarVM extends Server
 
         try {
             $server = $this->request('/api/admin/servers/deploy', 'post', $deploymentData);
+            logger()->debug('[raznarvm] server deployment request successful', ['response' => $server]);
         } catch (\Throwable $e) {
             logger()->error('Failed to create server via RaznarVM API', [
                 'service_id' => $service->id,
@@ -228,10 +246,13 @@ class RaznarVM extends Server
 
         $serverId = $server['data']['id'] ?? $server['id'] ?? null;
         if (!$serverId) {
+            logger()->debug('[raznarvm] server id not found in deployment response, fetching by external id');
             // Try fetching by external_id if ID misses in deployment response
             $serverDetails = $this->getServer($service->id, true, true);
             $serverId = $serverDetails['id'];
         }
+
+        logger()->debug('[raznarvm] server created', ['server_id' => $serverId]);
 
         return [
             'server' => $serverId,
@@ -261,8 +282,10 @@ class RaznarVM extends Server
 
     public function suspendServer(Service $service, $settings, $properties)
     {
+        logger()->debug('[raznarvm] suspending server', ['service_id' => $service->id]);
         $server = $this->getServer($service->id, failIfNotFound: false);
         if (!$server) {
+            logger()->debug('[raznarvm] server not found for suspension, skipping');
             return true;
         }
 
@@ -284,8 +307,10 @@ class RaznarVM extends Server
 
     public function terminateServer(Service $service, $settings, $properties)
     {
+        logger()->debug('[raznarvm] terminating server', ['service_id' => $service->id]);
         $server = $this->getServer($service->id, failIfNotFound: false);
         if (!$server) {
+            logger()->debug('[raznarvm] server not found for termination, skipping');
             return true;
         }
 
