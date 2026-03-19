@@ -47,7 +47,7 @@ class RaznarVM extends Server
         return true;
     }
 
-    public function request($url, $method = 'get', $data = []): array
+    public function request($url, $method = 'get', $data = []): array|string
     {
         $req_url = rtrim($this->config('host'), '/') . $url;
         logger()->debug('[raznarvm] executing api call', [
@@ -67,20 +67,25 @@ class RaznarVM extends Server
                 'status' => $response->status(),
                 'errors' => $body
             ]);
-            $errorMsg = $body['message'] ?? 'API Error';
-            if (isset($body['errors']) && is_array($body['errors'])) {
+            
+            $errorMsg = is_array($body) ? ($body['message'] ?? 'API Error') : 'API Error';
+            if (is_array($body) && isset($body['errors']) && is_array($body['errors'])) {
                 $errorMsg = collect($body['errors'])->first() ?? $errorMsg;
             }
             throw new DisplayException($errorMsg);
         }
 
-        $body = $response->json() ?? [];
+        $body = $response->json();
+        if ($body === null) {
+            $body = $response->body();
+        }
+
         logger()->debug('[raznarvm] api call successful', [
             'url' => $url,
-            'response' => $body
+            'response_type' => gettype($body)
         ]);
 
-        return $body;
+        return $body ?? [];
     }
 
     public function getProductConfig($values = []): array

@@ -44,7 +44,9 @@ class DeployServer implements ShouldQueue
             ])->post($url, $this->deploymentData);
 
             if (!$response->successful()) {
-                throw new Exception('RaznarVM API Error: ' . ($response->json()['message'] ?? 'Unknown error'));
+                $errorBody = $response->json();
+                $errorMsg = is_array($errorBody) ? ($errorBody['message'] ?? 'Unknown error') : 'API Error';
+                throw new Exception('RaznarVM API Error: ' . $errorMsg);
             }
 
             logger()->debug('[raznarvm] deployment request accepted, waiting 5 seconds for initialization...');
