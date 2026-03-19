@@ -71,10 +71,9 @@ class RaznarVM extends Server
     {
         $locations = $this->request('/api/admin/locations');
         $locationList = [];
-        if (isset($locations['data'])) {
-            foreach ($locations['data'] as $location) {
-                $locationList[$location['id']] = $location['label'];
-            }
+        $items = $locations['data']['items'] ?? $locations['data'] ?? [];
+        foreach ($items as $location) {
+            $locationList[$location['id']] = $location['label'];
         }
 
         return [
@@ -149,9 +148,10 @@ class RaznarVM extends Server
             'email' => $orderUser->email,
         ]);
 
-        if (!empty($response['data'])) {
+        $users = $response['data']['items'] ?? $response['data'] ?? [];
+        if (!empty($users)) {
             // Check if exact email matches, returning the first one
-            foreach ($response['data'] as $user) {
+            foreach ($users as $user) {
                 if ($user['email'] === $orderUser->email) {
                     return $user;
                 }
