@@ -158,18 +158,16 @@ class RaznarVM extends Server
 
     private function getOrCreateUser($orderUser): array
     {
-        // Search by email
         $response = $this->request('/api/admin/users', 'get', [
             'email' => $orderUser->email,
         ]);
 
-        $users = $response['data']['items'] ?? $response['data'] ?? [];
-        if (!empty($users)) {
-            // Check if exact email matches, returning the first one
-            foreach ($users as $user) {
-                if ($user['email'] === $orderUser->email) {
-                    return $user;
-                }
+        $data = $response['data'] ?? [];
+        $users = is_array($data) ? ($data['items'] ?? $data) : [];
+
+        foreach ($users as $user) {
+            if (($user['email'] ?? null) === $orderUser->email) {
+                return $user;
             }
         }
 
@@ -188,9 +186,11 @@ class RaznarVM extends Server
             'is_admin' => false,
         ]);
 
-        logger()->debug('[raznarvm] created new user', ['user_id' => $newUser['data']['id'] ?? $newUser['id'] ?? 'unknown']);
+        logger()->debug('[raznarvm] created new user', [
+            'user_id' => $newUser['data']['id'] ?? $newUser['id'] ?? 'unknown'
+        ]);
 
-        return $newUser['data'] ?? $newUser;
+        return $newUser['data'] ?? $newUser ?? [];
     }
 
     public function getServerId(Service $service, $settings, $properties)
