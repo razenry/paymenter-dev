@@ -6,6 +6,7 @@ use App\Classes\Extension\Server;
 use App\Events\Service as ServiceEvent;
 use App\Exceptions\DisplayException;
 use App\Models\Service;
+use App\Jobs\Extensions\RaznarVM\DeployServer;
 use Exception;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
@@ -205,11 +206,19 @@ class RaznarVM extends Server
 
     public function createServer(Service $service, $settings, $properties)
     {
+        // 1. Initial Checks (Short Checking)
         if ($this->getServer($service->id, failIfNotFound: false)) {
-            throw new DisplayException('Server already exists');
+            throw new DisplayException('Server already exists in RaznarVM');
         }
 
         $settings = array_merge($settings, $properties);
+        
+        if (empty($settings['location_id'])) {
+            throw new DisplayException('Location ID is missing. Please check your product settings.');
+        }
+
+        // 2. Pre-flight user setup (so it's already done before the job)
+        logger()->debug('[raznarvm] pre-flight: setting up user');
         $user = $this->getOrCreateUserId($service->user);
         
         $serverName = isset($settings['servername']) ? $settings['servername'] : $service->product->name . ' #' . $service->id;
@@ -231,32 +240,22 @@ class RaznarVM extends Server
             'dns2_v6' => '2606:4700:4700::1001',
         ];
 
+        // 3. Move it to a background job
         try {
-            $server = $this->request('/api/admin/servers/deploy', 'post', $deploymentData);
-            logger()->debug('[raznarvm] server deployment request successful', ['response' => $server]);
+            DeployServer::dispatch($service, $deploymentData, $this->config('host'), $this->config('api_key'));
+            logger()->debug('[raznarvm] server deployment job dispatched', ['service_id' => $service->id]);
         } catch (\Throwable $e) {
-            logger()->error('Failed to create server via RaznarVM API', [
+            logger()->error('Failed to dispatch server creation job via RaznarVM', [
                 'service_id' => $service->id,
-                'payload' => $deploymentData,
                 'error' => $e->getMessage(),
             ]);
 
-            throw new DisplayException('Server deployment failed: ' . $e->getMessage());
+            throw new DisplayException('Failed to queue server deployment: ' . $e->getMessage());
         }
-
-        $serverId = $server['data']['id'] ?? $server['id'] ?? null;
-        if (!$serverId) {
-            logger()->debug('[raznarvm] server id not found in deployment response, fetching by external id');
-            // Try fetching by external_id if ID misses in deployment response
-            $serverDetails = $this->getServer($service->id, true, true);
-            $serverId = $serverDetails['id'];
-        }
-
-        logger()->debug('[raznarvm] server created', ['server_id' => $serverId]);
 
         return [
-            'server' => $serverId,
-            'link' => rtrim($this->config('host'), '/') . '/client/servers/' . $serverId,
+            'server' => 'Provisioning...',
+            'link' => rtrim($this->config('host'), '/') . '/client/servers',
         ];
     }
 
