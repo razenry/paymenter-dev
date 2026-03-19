@@ -378,10 +378,10 @@ class RaznarVM extends Server
 
         $userId = $this->getOrCreateUserId($orderUser);
         $data = $this->request('/api/admin/users/' . $userId . '/sso', 'get');
-        
 
+        $token = is_array($data) ? ($data['data'] ?? $data['token'] ?? '') : $data;
 
-        return rtrim($this->config('host'), '/') . '/auth/sso?token=' . $data;
+        return rtrim($this->config('host'), '/') . '/auth/sso?token=' . $token;
     }
 
     public function resetPassword(Service $service)
