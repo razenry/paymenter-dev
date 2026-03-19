@@ -342,6 +342,21 @@ Administrator-only endpoints.
     ```
 - **SendCommand**: `POST /api/admin/servers/:id/send-command`
   - Body: `{ "command": ["ls", "-la"] }`
+- **Upgrade Server**: `POST /api/admin/servers/:id/upgrade`
+  - Request Body:
+    ```json
+    {
+      "cpu": 4,
+      "memory": 8192,
+      "network_rate": 1000,
+      "disks": [
+        { "id": 1, "size": 100 },
+        { "id": 2, "size": 200 }
+      ]
+    }
+    ```
+    ```
+  - _Note: Upgrades are queued and applied automatically when the server is **started** or **restarted**. For restarts, the system will stop the server, apply all pending upgrades, and then start it again._
 - **Detail/Update/Delete**: `GET|PUT|DELETE /api/admin/servers/:id`
 - **Force Delete**: `DELETE /api/admin/servers/:id/force`
 
@@ -349,6 +364,7 @@ Administrator-only endpoints.
   - `GET /api/admin/servers/external/:id`
   - `PUT /api/admin/servers/external/:id`
   - `POST /api/admin/servers/external/:id/send-command`
+  - `POST /api/admin/servers/external/:id/upgrade`
 
 ### Server Disks
 

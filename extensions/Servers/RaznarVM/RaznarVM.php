@@ -336,14 +336,19 @@ class RaznarVM extends Server
     {
         $settings = array_merge($settings, $properties);
 
-        // Fetch current resources from the API
-        $currentServer = $this->getServer($service->id, failIfNotFound: true, raw: true);
-        $serverId = $currentServer['id'];
+        // 1. Fetch current server details including disks to get the Disk ID
+        // Doc ref: GET /api/admin/servers/external/:id?include_disks=1
+        $response = $this->request("/api/admin/servers/external/{$service->id}?include_disks=1", 'get');
+        $server = $response['data'] ?? $response ?? [];
+
+        if (empty($server)) {
+            throw new DisplayException('Failed to retrieve current server details from RaznarVM.');
+        }
 
         $current = [
-            'cpu' => (int) ($currentServer['cpu'] ?? $currentServer['cores'] ?? 0),
-            'memory' => (int) ($currentServer['memory'] ?? 0),
-            'disk' => (int) ($currentServer['disk_size'] ?? 0),
+            'cpu' => (int) ($server['cpu'] ?? $server['cores'] ?? 0),
+            'memory' => (int) ($server['memory'] ?? 0),
+            'disk' => (int) ($server['disk_size'] ?? 0),
         ];
 
         $target = [
@@ -352,57 +357,48 @@ class RaznarVM extends Server
             'disk' => (int) ($settings['disk_size'] ?? 1),
         ];
 
-        logger()->debug('[raznarvm] Starting server upgrade check', compact('current', 'target'));
+        logger()->debug('[raznarvm] Starting server upgrade', compact('current', 'target'));
 
         $this->validateUpgradeResources($current, $target);
 
-        $diff = [
-            'cpu' => $target['cpu'] - $current['cpu'],
-            'memory' => $target['memory'] - $current['memory'],
-            'disk' => $target['disk'] - $current['disk'],
+        // 2. Prepare upgrade payload according to newest API docs
+        // Doc ref: POST /api/admin/servers/:id/upgrade
+        $upgradeData = [
+            'cpu' => $target['cpu'],
+            'memory' => $this->normalizeVmMemory($target['memory']),
+            'network_rate' => (int) ($settings['network_rate'] ?? $server['network_rate'] ?? 0),
         ];
 
-        if ($diff['cpu'] !== 0 || $diff['memory'] !== 0 || $diff['disk'] !== 0) {
-            logger()->debug('[raznarvm] Executing resource update sequence', $diff);
+        // Format disks array as required by the new API
+        $disks = $server['disks'] ?? [];
+        if (!empty($disks)) {
+            // Find the primary disk (usually labeled 'main' or the first one)
+            $mainDisk = collect($disks)->firstWhere('label', 'main') ?? $disks[0];
+            $upgradeData['disks'] = [
+                [
+                    'id' => (int) ($mainDisk['id'] ?? $mainDisk['disk_id'] ?? 0),
+                    'size' => (int) $target['disk'],
+                ]
+            ];
+        }
 
-            try {
-                // 1. Stop VM (following ExampleProxmoxPterodactyl.php)
-                logger()->debug('[raznarvm] Stopping VM for upgrade');
-                $this->request("/api/servers/{$serverId}/stop", 'post');
+        try {
+            // 3. Execute the upgrade
+            logger()->debug('[raznarvm] Sending POST upgrade request', $upgradeData);
+            $this->request("/api/admin/servers/external/{$service->id}/upgrade", 'post', $upgradeData);
 
-                // 2. Update CPU/RAM
-                if ($diff['cpu'] !== 0 || $diff['memory'] !== 0) {
-                    $updateData = [
-                        'cores' => $target['cpu'],
-                        'memory' => $this->normalizeVmMemory($target['memory']),
-                    ];
-                    if (isset($settings['network_rate'])) {
-                        $updateData['network_rate'] = (int) $settings['network_rate'];
-                    }
-
-                    logger()->debug('[raznarvm] Updating core specs', $updateData);
-                    $this->request("/api/servers/{$serverId}", 'put', $updateData);
-                }
-
-                // 3. Increase Disk (using specialized increase endpoint)
-                if ($diff['disk'] > 0) {
-                    logger()->debug('[raznarvm] Increasing disk', ['increase_gb' => $diff['disk']]);
-                    $this->request("/api/servers/{$serverId}/disks/main/increase", 'post', [
-                        'size' => (int) $diff['disk'],
-                    ]);
-                }
-
-                logger()->debug('[raznarvm] Upgrade sequence complete');
-            } catch (Exception $e) {
-                logger()->error('[raznarvm] Upgrade sequence failed', ['error' => $e->getMessage()]);
-                // We attempt to start it back up even if something failed
-                $this->request("/api/servers/{$serverId}/start", 'post');
-                throw $e;
-            } finally {
-                // 4. Start VM
-                logger()->debug('[raznarvm] Starting VM');
-                $this->request("/api/servers/{$serverId}/start", 'post');
+            // 4. Apply changes (Restart if server is running)
+            // Docs note: Upgrades are applied automatically when the server is started or restarted.
+            $status = strtolower($server['runtime_status'] ?? $server['status'] ?? '');
+            if (in_array($status, ['running', 'active', 'online'])) {
+                logger()->debug('[raznarvm] Triggering restart to apply queued upgrade');
+                $this->request("/api/admin/servers/external/{$service->id}/restart", 'post');
             }
+            
+            logger()->debug('[raznarvm] Upgrade sequence processed');
+        } catch (Exception $e) {
+            logger()->error('[raznarvm] Upgrade failed', ['error' => $e->getMessage()]);
+            throw $e;
         }
 
         return true;

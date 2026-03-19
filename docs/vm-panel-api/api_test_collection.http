@@ -149,6 +149,19 @@ Content-Type: application/json
     "dns1": "1.1.1.1"
 }
 
+### Upgrade Server
+POST {{baseUrl}}/admin/servers/{{serverId}}/upgrade
+Authorization: Bearer {{authToken}}
+Content-Type: application/json
+
+{
+    "cpu": 4,
+    "memory": 4096,
+    "disks": [
+        { "id": 1, "size": 100 }
+    ]
+}
+
 ### Get General Settings
 GET {{baseUrl}}/admin/settings/general
 Authorization: Bearer {{authToken}}
