@@ -1,0 +1,85 @@
+@baseUrl = https://dev-ptero.yusta.uk/api/application/hyper-nodes
+@apiKey = ptla_0fVB8IegqTXoSN99MXmq9YqGmnGbb2vKFfrH6FcchU4
+
+### Store Hyper Node
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "HN-1",
+  "description": "Powerful node",
+  "user": 1,
+  "owner_id": 1,
+  "external_id": "ext_hyper_1",
+  "location_id": 1,
+  "limits": {
+    "memory": 2048,
+    "cpu": 400,
+    "disk": 50000
+  },
+  "feature_limits": {
+    "databases": 5,
+    "allocations": 10,
+    "backups": 3
+  },
+  "max_servers": 10,
+  "max_databases": 5,
+  "max_allocations": 10,
+  "max_backups": 3,
+  "billing_expire_date": "2026-12-31",
+  "unlimited_resources": false,
+  "deploy": {
+    "locations": [1],
+    "port_range": ["25565-25570"]
+  }
+}
+
+### Upgrade Hyper Node
+POST {{baseUrl}}/4/upgrade
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "memory": 4100,
+  "cpu": 400,
+  "disk": 60000
+}
+
+### Install Hyper Node
+POST {{baseUrl}}/1/install
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Update Hyper Node
+POST {{baseUrl}}/1/update
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Restart Hyper Node
+POST {{baseUrl}}/1/restart
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Suspend Hyper Node
+POST {{baseUrl}}/1/suspend
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Unsuspend Hyper Node
+POST {{baseUrl}}/1/unsuspend
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Destroy Hyper Node
+DELETE {{baseUrl}}/8
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

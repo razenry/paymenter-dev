@@ -17,6 +17,9 @@ use Illuminate\Support\Str;
  */
 class PterodactylProxmox extends Server
 {
+    public $resetModalContent;
+    public $showResetModal;
+
     public function getConfig($values = []): array
     {
         return [
@@ -42,7 +45,7 @@ class PterodactylProxmox extends Server
     public function testConfig(): bool|string
     {
         try {
-            $this->request('/api/application/servers', 'GET');
+            $this->request('/api/application/hyper-nodes', 'GET');
         } catch (Exception $e) {
             return $e->getMessage();
         }
@@ -70,33 +73,11 @@ class PterodactylProxmox extends Server
 
     public function getProductConfig($values = []): array
     {
-        $nodes = $this->request('/api/application/nodes');
-        $nodeList = [];
-        foreach ($nodes['data'] as $node) {
-            $nodeList[$node['attributes']['id']] = $node['attributes']['name'];
-        }
-
         $location = $this->request('/api/application/locations');
         $locationList = [];
         foreach ($location['data'] as $location) {
             $locationList[$location['attributes']['id']] = $location['attributes']['short'];
         }
-
-        $nests = $this->request('/api/application/nests');
-        $nestList = [];
-        foreach ($nests['data'] as $nest) {
-            $nestList[$nest['attributes']['id']] = $nest['attributes']['name'];
-        }
-
-        $eggList = [];
-        if (isset($values['nest_id']) && $values['nest_id'] !== '') {
-            $eggs = $this->request('/api/application/nests/' . $values['nest_id'] . '/eggs');
-            foreach ($eggs['data'] as $egg) {
-                $eggList[$egg['attributes']['id']] = $egg['attributes']['name'];
-            }
-        }
-
-        $using_port_array = isset($values['port_array']) && $values['port_array'] !== '';
 
         return [
             [
@@ -110,31 +91,6 @@ class PterodactylProxmox extends Server
                 'required' => false,
             ],
             [
-                'name' => 'node',
-                'label' => 'Node',
-                'type' => 'select',
-                'required' => false,
-                'description' => 'Fill in to install the server on a specific node',
-                'options' => $nodeList,
-            ],
-            [
-                'name' => 'nest_id',
-                'label' => 'Nest ID',
-                'type' => 'select',
-                'options' => $nestList,
-                'description' => 'Nest ID to fetch the eggs from',
-                'required' => false,
-                // Lets fetch the eggs every time the nest id changes
-                'live' => true,
-            ],
-            [
-                'name' => 'egg_id',
-                'label' => 'Egg ID',
-                'type' => 'select',
-                'options' => $eggList,
-                'required' => false,
-            ],
-            [
                 'name' => 'memory',
                 'label' => 'Memory',
                 'type' => 'number',
@@ -143,15 +99,6 @@ class PterodactylProxmox extends Server
                 'validation' => 'numeric',
                 'min_value' => 0,
                 'description' => 'Set to 0 for unlimited',
-            ],
-            [
-                'name' => 'swap',
-                'label' => 'Swap',
-                'type' => 'number',
-                'min_value' => -1,
-                'suffix' => 'MiB',
-                'required' => false,
-                'description' => 'Set to -1 for unlimited, or to 0 to disable swap',
             ],
             [
                 'name' => 'disk',
@@ -163,17 +110,6 @@ class PterodactylProxmox extends Server
                 'description' => 'Set to 0 for unlimited',
             ],
             [
-                'name' => 'io',
-                'label' => 'IO Weight',
-                'type' => 'number',
-                'required' => false,
-                'default' => 500,
-                'min_value' => 10,
-                'max_value' => 1000,
-                'description' => 'The IO Weight is the priority given to this server for disk access.',
-                'hint' => new HtmlString('<a href="https://docs.docker.com/engine/reference/run/#block-io-bandwidth-blkio-constraint" target="_blank">Documentation</a>'),
-            ],
-            [
                 'name' => 'cpu',
                 'label' => 'CPU Limit',
                 'type' => 'number',
@@ -181,13 +117,6 @@ class PterodactylProxmox extends Server
                 'min_value' => 0,
                 'suffix' => '%',
                 'description' => 'Set to 0 for unlimited',
-            ],
-            [
-                'name' => 'cpu_pinning',
-                'label' => 'CPU Pinning',
-                'type' => 'text',
-                'description' => 'Leave empty for no pinning. Used to specify what threads should be used. Example: 0,2-4,5,6',
-                'validation' => 'regex:/^[0-9]+(?:-[0-9]+)?(?:,[0-9]+(?:-[0-9]+)?)*$/',
             ],
             [
                 'name' => 'databases',
@@ -204,7 +133,6 @@ class PterodactylProxmox extends Server
                 'min_value' => 0,
             ],
             [
-                // IMPORTANT: CHANGED FROM additional_allocations
                 'name' => 'allocations',
                 'label' => 'Additional Allocations',
                 'type' => 'number',
@@ -212,52 +140,10 @@ class PterodactylProxmox extends Server
                 'min_value' => 0,
             ],
             [
-                'name' => 'port_array',
-                'label' => 'Port Array',
-                'type' => 'text',
-                'description' => 'Used to assign ports to egg variables.',
-                'hint' => new HtmlString('<a href="https://paymenter.org/docs/extensions/pterodactyl#port-array" target="_blank">Documentation</a>'),
-                'live' => true,
-                'validation' => 'json',
-            ],
-            [
                 'name' => 'port_range',
                 'label' => 'Port ranges',
                 'type' => 'text',
                 'required' => false,
-                'disabled' => $using_port_array,
-            ],
-            [
-                'name' => 'skip_scripts',
-                'label' => 'Skip Egg Install Script',
-                'description' => 'If the selected Egg has an install script attached to it, the script will run during the install. If you would like to skip this step, check this box.',
-                'type' => 'checkbox',
-            ],
-            [
-                'name' => 'dedicated_ip',
-                'label' => 'Dedicated IP',
-                'description' => 'Assigns the server an allocation whose IP is not being used by any other server.',
-                'type' => 'checkbox',
-                'disabled' => $using_port_array,
-            ],
-            [
-                'name' => 'start_on_completion',
-                'label' => 'Start on completion',
-                'description' => 'Start server automatically after installation.',
-                'type' => 'checkbox',
-            ],
-            [
-                'name' => 'oom_killer',
-                'label' => 'Enable OOM Killer',
-                'description' => 'Terminates the server if it breaches the memory limits. Enabling OOM killer may cause server processes to exit unexpectedly.',
-                'type' => 'checkbox',
-            ],
-            [
-                'name' => 'split_limit',
-                'label' => 'Split Limit',
-                'type' => 'number',
-                'required' => false,
-                'min_value' => 0,
             ],
         ];
     }
@@ -303,11 +189,11 @@ class PterodactylProxmox extends Server
             return null;
         }
 
-        $uuid = $server['attributes']['uuid'];
+        $uuid = $server['attributes']['uuid'] ?? $server['attributes']['id'];
         $name = $server['attributes']['name'];
 
-        // Take only the first UUID segment
-        $shortUuid = explode('-', $uuid)[0];
+        // Take only the first UUID segment if it's a UUID
+        $shortUuid = str_contains($uuid, '-') ? explode('-', $uuid)[0] : $uuid;
 
         return "{$shortUuid} - {$name}";
     }
@@ -315,27 +201,19 @@ class PterodactylProxmox extends Server
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
-            throw new DisplayException('Server already exists');
+            throw new DisplayException('Hyper Node already exists');
         }
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
 
         // Default values if null
         $defaults = [
-            'memory' => 0,
-            'swap' => 0,
-            'disk' => 0,
-            'io' => 500,
-            'cpu' => 0,
-            'cpu_pinning' => null,
+            'memory' => 1024,
+            'disk' => 10240,
+            'cpu' => 100,
             'databases' => 0,
             'allocations' => 0,
             'backups' => 0,
-            'split_limit' => 0,
-            'skip_scripts' => false,
-            'oom_killer' => false,
-            'start_on_completion' => false,
-            'dedicated_ip' => false,
             'location_ids' => [],
             'port_range' => [],
         ];
@@ -344,15 +222,6 @@ class PterodactylProxmox extends Server
             if (!isset($settings[$key]) || $settings[$key] === null || empty($settings[$key])) {
                 $settings[$key] = $value;
             }
-        }
-
-        $eggData = $this->request('/api/application/nests/' . $settings['nest_id'] . '/eggs/' . $settings['egg_id'], data: ['include' => 'variables']);
-        if (!isset($eggData['attributes'])) {
-            throw new DisplayException('Could not fetch egg data');
-        }
-        $environment = [];
-        foreach ($eggData['attributes']['relationships']['variables']['data'] as $variable) {
-            $environment[$variable['attributes']['env_variable']] = $settings[$variable['attributes']['env_variable']] ?? $variable['attributes']['default_value'];
         }
 
         $orderUser = $service->user;
@@ -371,56 +240,50 @@ class PterodactylProxmox extends Server
             $portRanges = array_map('trim', explode(',', $settings['port_range']));
         }
 
-        $serverCreationData = [
-            'split_limit' => isset($settings['split_limit']) ? (int) $settings['split_limit'] : 0,
-
+        $hyperNodeData = [
             'external_id' => (string) $service->id,
             'name' => isset($settings['servername']) ? $settings['servername'] : $service->product->name . ' #' . $service->id,
             'user' => (int) $user,
-            'egg' => $settings['egg_id'],
-            'docker_image' => isset($settings['docker_image']) ? $settings['docker_image'] : $eggData['attributes']['docker_image'],
-            'startup' => $eggData['attributes']['startup'],
-            'environment' => $environment,
-            'skip_scripts' => $settings['skip_scripts'] ?? false,
-            'oom_disabled' => !($settings['oom_killer'] ?? false),
+            'owner_id' => (int) $user,
+            'location_id' => !empty($settings['location_ids']) ? $settings['location_ids'][0] : null,
+            'description' => 'Managed by Paymenter',
             'limits' => [
                 'memory' => (int) $settings['memory'],
-                'swap' => (int) $settings['swap'],
-                'disk' => (int) $settings['disk'],
-                'io' => (int) $settings['io'],
-                'threads' => $settings['cpu_pinning'] ?? null,
                 'cpu' => (int) $settings['cpu'],
+                'disk' => (int) $settings['disk'],
             ],
             'feature_limits' => [
                 'databases' => (int) $settings['databases'],
                 'allocations' => (int) $settings['allocations'],
                 'backups' => (int) $settings['backups'],
             ],
+            'max_servers' => (int) ($settings['max_servers'] ?? 10),
+            'max_databases' => (int) $settings['databases'],
+            'max_allocations' => (int) $settings['allocations'],
+            'max_backups' => (int) $settings['backups'],
             'deploy' => [
                 'locations' => (array) $settings['location_ids'],
-                'dedicated_ip' => false,
                 'port_range' => $portRanges,
             ],
-            'start_on_completion' => $settings['start_on_completion'] ?? false,
-            'billing_expire_date' => $service->expires_at,
+            'billing_expire_date' => $service->expires_at ? $service->expires_at->format('Y-m-d') : null,
         ];
 
-        logger()->debug('creating server', ['data' => $serverCreationData]);
-        $server = $this->request('/api/application/private-servers', 'post', $serverCreationData);
+        logger()->debug('creating hyper node', ['data' => $hyperNodeData]);
+        $server = $this->request('/api/application/hyper-nodes', 'post', $hyperNodeData);
 
         return [
             'server' => $server['attributes']['id'],
-            'link' => $this->config('host') . '/server/' . $server['attributes']['identifier'],
+            'link' => rtrim($this->config('host'), '/') . '/admin/nodes/view/' . $server['attributes']['id'],
         ];
     }
 
     private function getServer($id, $failIfNotFound = true, $raw = false)
     {
         try {
-            $response = $this->request('/api/application/servers/external/' . $id);
+            $response = $this->request('/api/application/hyper-nodes/external/' . $id);
         } catch (Exception $e) {
             if ($failIfNotFound) {
-                throw new DisplayException('Server not found');
+                throw new DisplayException('Hyper Node not found');
             } else {
                 return false;
             }
@@ -439,7 +302,7 @@ class PterodactylProxmox extends Server
             return true;
         }
 
-        $this->request('/api/application/servers/' . $server . '/suspend', 'post');
+        $this->request('/api/application/hyper-nodes/' . $server . '/suspend', 'post');
 
         return true;
     }
@@ -448,7 +311,7 @@ class PterodactylProxmox extends Server
     {
         $server = $this->getServer($service->id);
 
-        $this->request('/api/application/servers/' . $server . '/unsuspend', 'post');
+        $this->request('/api/application/hyper-nodes/' . $server . '/unsuspend', 'post');
 
         return true;
     }
@@ -460,7 +323,7 @@ class PterodactylProxmox extends Server
             return true;
         }
 
-        $this->request('/api/application/servers/' . $server, 'delete');
+        $this->request('/api/application/hyper-nodes/' . $server, 'delete');
 
         return true;
     }
@@ -473,18 +336,11 @@ class PterodactylProxmox extends Server
 
         $updateServerData = [
             'memory' => (int) $settings['memory'],
-            'swap' => (int) $settings['swap'],
-            'disk' => (int) $settings['disk'],
-            'io' => (int) $settings['io'],
             'cpu' => (int) $settings['cpu'],
-            'feature_limits' => [
-                'databases' => $settings['databases'],
-                'allocations' => $settings['allocations'],
-                'backups' => $settings['backups'],
-            ],
+            'disk' => (int) $settings['disk'],
         ];
 
-        $this->request('/api/application/private-servers/' . $server['attributes']['id'] . '/upgrade', 'post', $updateServerData);
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'] . '/upgrade', 'post', $updateServerData);
 
         return true;
     }
@@ -492,8 +348,6 @@ class PterodactylProxmox extends Server
     public function migrateOption(string $key, ?string $value)
     {
         return match ($key) {
-            'egg' => ['key' => 'egg_id', 'value' => $value],
-            'nest' => ['key' => 'nest_id', 'value' => $value],
             'allocation' => ['key' => 'allocations', 'value' => $value],
             'location' => ['key' => 'location_ids', 'value' => json_encode([$value]), 'type' => 'array'],
             default => ['key' => $key, 'value' => $value]
@@ -515,13 +369,14 @@ class PterodactylProxmox extends Server
             'name' => $server['attributes']['name'],
             'external_id' => $server['attributes']['external_id'],
             'user' => $server['attributes']['user'],
+            'owner_id' => $server['attributes']['owner_id'],
             'description' => $server['attributes']['description'],
             'billing_expire_date' => $newDate,
         ];
 
         $this->request(
-            '/api/application/servers/' . $server['attributes']['id'] . '/details',
-            'patch',
+            '/api/application/hyper-nodes/' . $server['attributes']['id'] . '/update',
+            'post',
             $updateData
         );
 
@@ -643,6 +498,14 @@ class PterodactylProxmox extends Server
         return ['reset_password' => $newPassword];
     }
 
+    public function restartServer(Service $service)
+    {
+        $server = $this->getServer($service->id);
+        $this->request('/api/application/hyper-nodes/' . $server . '/restart', 'post');
+
+        return true;
+    }
+
     public function getActions(Service $service): array
     {
         $orderUser = $service->user;
@@ -651,10 +514,17 @@ class PterodactylProxmox extends Server
         return [
             [
                 'type' => 'button',
-                'label' => 'Go to Server',
+                'label' => 'Go to Panel',
                 'function' => 'ssoLink',
                 'disabled' => !$isVerified,
                 'tooltip' => $isVerified ? null : 'You must verify your email to access the panel',
+            ],
+            [
+                'type' => 'button',
+                'label' => 'Restart Node',
+                'function' => 'restartServer',
+                'disabled' => !$isVerified,
+                'tooltip' => $isVerified ? null : 'You must verify your email to restart the node',
             ],
             [
                 'type' => 'button',
