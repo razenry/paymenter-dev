@@ -268,16 +268,8 @@ class RaznarVM extends Server
     private function getServer($id, $failIfNotFound = true, $raw = false)
     {
         try {
-            // Check if we have an internal ID stored
-            $internalId = Service::find($id)?->properties()->where('key', 'server')->first()?->value;
-            
-            if ($internalId) {
-                $response = $this->request('/api/servers/' . $internalId);
-                $data = $response['data'] ?? $response;
-            } else {
-                $response = $this->request('/api/admin/servers/external/' . $id);
-                $data = $response['data'] ?? $response;
-            }
+            $response = $this->request('/api/admin/servers/external/' . $id);
+            $data = $response['data'] ?? $response;
         } catch (Exception $e) {
             if ($failIfNotFound) {
                 throw new DisplayException('Server not found');

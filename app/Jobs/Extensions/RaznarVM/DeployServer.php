@@ -73,10 +73,7 @@ class DeployServer implements ShouldQueue
             }
 
             if ($serverId) {
-                // Update service properties
-                $this->service->properties()->updateOrCreate(['key' => 'server'], ['value' => $serverId]);
-                
-                logger()->debug('[raznarvm] background deployment successful', [
+                logger()->debug('[raznarvm] background deployment successful and verified', [
                     'service_id' => $this->service->id,
                     'server_id' => $serverId
                 ]);
