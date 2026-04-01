@@ -49,20 +49,28 @@ class DeployServer implements ShouldQueue
                 throw new Exception('RaznarVM API Error: ' . $errorMsg);
             }
 
-            logger()->debug('[raznarvm] deployment request accepted, waiting 5 seconds for initialization...');
-            sleep(5);
+            $postData = $response->json();
+            $serverId = $postData['data']['id'] ?? $postData['id'] ?? null;
 
-            $serverDetails = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $this->apiKey,
-                'Accept' => 'application/json',
-            ])->get(rtrim($this->host, '/') . '/api/admin/servers/external/' . $this->service->id);
+            if (!$serverId) {
+                logger()->debug('[raznarvm] server ID not in deployment response, performing external lookup...');
+                for ($i = 0; $i < 5; $i++) {
+                    sleep(3 + ($i * 2)); // 3, 5, 7, 9, 11 seconds
+                    $serverDetails = Http::withHeaders([
+                        'Authorization' => 'Bearer ' . $this->apiKey,
+                        'Accept' => 'application/json',
+                    ])->get(rtrim($this->host, '/') . '/api/admin/servers/external/' . $this->service->id);
 
-            if (!$serverDetails->successful()) {
-                throw new Exception('Failed to obtain server ID after successful deployment');
+                    if ($serverDetails->successful()) {
+                        $detailsData = $serverDetails->json();
+                        $serverId = $detailsData['data']['id'] ?? $detailsData['id'] ?? null;
+                        if ($serverId) {
+                            logger()->debug('[raznarvm] server ID obtained via external lookup', ['server_id' => $serverId, 'attempt' => $i + 1]);
+                            break;
+                        }
+                    }
+                }
             }
-
-            $detailsData = $serverDetails->json();
-            $serverId = $detailsData['data']['id'] ?? $detailsData['id'] ?? null;
 
             if ($serverId) {
                 // Update service properties
@@ -73,7 +81,7 @@ class DeployServer implements ShouldQueue
                     'server_id' => $serverId
                 ]);
             } else {
-                throw new Exception('Server ID not found in server details response');
+                throw new Exception('Failed to obtain server ID via initial response or external lookup after deployment.');
             }
 
         } catch (Exception $e) {
