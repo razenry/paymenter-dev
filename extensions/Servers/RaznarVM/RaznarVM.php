@@ -57,9 +57,9 @@ class RaznarVM extends Server
         ]);
 
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->config('api_key'),
-            'Accept' => 'application/json',
-        ])->$method($req_url, $data);
+                    'Authorization' => 'Bearer ' . $this->config('api_key'),
+                    'Accept' => 'application/json',
+                ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             $body = $response->json() ?? [];
@@ -67,7 +67,7 @@ class RaznarVM extends Server
                 'status' => $response->status(),
                 'errors' => $body
             ]);
-            
+
             $errorMsg = is_array($body) ? ($body['message'] ?? 'API Error') : 'API Error';
             if (is_array($body) && isset($body['errors']) && is_array($body['errors'])) {
                 $errorMsg = collect($body['errors'])->first() ?? $errorMsg;
@@ -218,7 +218,7 @@ class RaznarVM extends Server
         }
 
         $settings = array_merge($settings, $properties);
-        
+
         if (empty($settings['location_id'])) {
             throw new DisplayException('Location ID is missing. Please check your product settings.');
         }
@@ -226,7 +226,7 @@ class RaznarVM extends Server
         // 2. Pre-flight user setup (so it's already done before the job)
         logger()->debug('[raznarvm] pre-flight: setting up user');
         $user = $this->getOrCreateUserId($service->user);
-        
+
         $serverName = isset($settings['servername']) ? $settings['servername'] : $service->product->name . ' #' . $service->id;
 
         $deploymentData = [
@@ -373,7 +373,7 @@ class RaznarVM extends Server
             // 3. Execute the upgrade
             logger()->debug('[raznarvm] Sending POST upgrade request', $upgradeData);
             $this->request("/api/admin/servers/external/{$service->id}/upgrade", 'post', $upgradeData);
-            
+
             logger()->debug('[raznarvm] Upgrade sequence processed');
         } catch (Exception $e) {
             logger()->error('[raznarvm] Upgrade failed', ['error' => $e->getMessage()]);

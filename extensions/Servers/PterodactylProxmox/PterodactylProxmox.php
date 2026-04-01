@@ -39,6 +39,13 @@ class PterodactylProxmox extends Server
                 'required' => true,
                 'encrypted' => true,
             ],
+            [
+                'name' => 'server_prefix',
+                'label' => 'Server Name Prefix',
+                'type' => 'text',
+                'description' => 'The prefix for the server name (e.g. PMX-)',
+                'default' => 'PMX-',
+            ],
         ];
     }
 
@@ -58,9 +65,9 @@ class PterodactylProxmox extends Server
         // Trim any leading slashes from the base url and add the path URL to it
         $req_url = rtrim($this->config('host'), '/') . $url;
         $response = Http::withHeaders([
-            'Authorization' => 'Bearer ' . $this->config('api_key'),
-            'Accept' => 'application/json',
-        ])->$method($req_url, $data);
+                    'Authorization' => 'Bearer ' . $this->config('api_key'),
+                    'Accept' => 'application/json',
+                ])->$method($req_url, $data);
 
         if (!$response->successful()) {
             $body = $response->json();
@@ -242,7 +249,7 @@ class PterodactylProxmox extends Server
 
         $hyperNodeData = [
             'external_id' => (string) $service->id,
-            'name' => isset($settings['servername']) ? $settings['servername'] : $service->product->name . ' #' . $service->id,
+            'name' => isset($settings['servername']) ? $settings['servername'] : ($this->config('server_prefix') ?? 'PMX-') . $service->id,
             'user' => (int) $user,
             'owner_id' => (int) $user,
             'location_id' => !empty($settings['location_ids']) ? $settings['location_ids'][0] : null,
