@@ -1,0 +1,47 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/network
+@apiKey = {{client_api_key}}
+
+### List Allocations
+GET {{baseUrl}}/allocations
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Allocation Profiles
+GET {{baseUrl}}/allocations/profiles
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Assign New Allocation
+POST {{baseUrl}}/allocations
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+    "profileId": 1,
+    "selectedPort": 0
+}
+
+### Update Allocation Notes
+POST {{baseUrl}}/allocations/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+    "notes": "Custom notes for this allocation"
+}
+
+### Set Primary Allocation
+POST {{baseUrl}}/allocations/1/primary
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Delete Allocation
+DELETE {{baseUrl}}/allocations/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

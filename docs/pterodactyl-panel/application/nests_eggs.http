@@ -1,0 +1,32 @@
+@baseUrl = {{panel_url}}/api/application/nests
+@apiKey = {{application_api_key}}
+
+### List Nests
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Nest Details
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### List Eggs in Nest
+GET {{baseUrl}}/1/eggs
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Egg Details
+GET {{baseUrl}}/1/eggs/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### List Egg Profiles
+GET {{baseUrl}}/egg-profiles
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

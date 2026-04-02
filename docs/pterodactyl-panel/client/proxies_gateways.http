@@ -1,0 +1,119 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}
+@apiKey = {{client_api_key}}
+
+### L4 Proxy - List
+GET {{baseUrl}}/l4-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### L4 Proxy - Store
+POST {{baseUrl}}/l4-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "node_id": 1,
+  "protocol": "tcp",
+  "allocation_id": null
+}
+
+### L4 Proxy - Delete
+DELETE {{baseUrl}}/l4-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1
+}
+
+### FiveM Cache Proxy - List
+GET {{baseUrl}}/fivem-cache-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### FiveM Cache Proxy - Store
+POST {{baseUrl}}/fivem-cache-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "node_id": 1,
+  "subdomain": "mycache",
+  "cache_size": 5120
+}
+
+### FiveM Cache Proxy - Clear Cache
+POST {{baseUrl}}/fivem-cache-proxy/clear
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1
+}
+
+### FiveM Cache Proxy - Delete
+DELETE {{baseUrl}}/fivem-cache-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1
+}
+
+### FiveM Gate Proxy - List
+GET {{baseUrl}}/fivem-gate-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### FiveM Gate Proxy - Store
+POST {{baseUrl}}/fivem-gate-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "node_id": 1,
+  "identifier": "mygate"
+}
+
+### FiveM Gate Proxy - Delete
+DELETE {{baseUrl}}/fivem-gate-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1
+}
+
+### Reverse Proxy - List
+GET {{baseUrl}}/reverse-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Reverse Proxy - Store
+POST {{baseUrl}}/reverse-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "node_id": 1,
+  "domain": "example.com",
+  "port": 80
+}
+
+### Reverse Proxy - Delete
+DELETE {{baseUrl}}/reverse-proxy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "id": 1
+}

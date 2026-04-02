@@ -1,0 +1,94 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/schedules
+@apiKey = {{client_api_key}}
+
+### List Schedules
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Schedule
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Daily Restart",
+  "is_active": true,
+  "minute": "0",
+  "hour": "0",
+  "day_of_month": "*",
+  "month": "*",
+  "day_of_week": "*",
+  "only_when_online": true,
+  "timezone": "UTC"
+}
+
+### Get Schedule
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Update Schedule
+POST {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Daily Restart Updated",
+  "is_active": true,
+  "minute": "30",
+  "hour": "2",
+  "day_of_month": "*",
+  "month": "*",
+  "day_of_week": "*",
+  "only_when_online": true,
+  "timezone": "UTC"
+}
+
+### Execute Schedule
+POST {{baseUrl}}/1/execute
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Delete Schedule
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Task
+POST {{baseUrl}}/1/tasks
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "action": "power",
+  "payload": "restart",
+  "time_offset": 0,
+  "continue_on_failure": false
+}
+
+### Update Task
+POST {{baseUrl}}/1/tasks/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "action": "command",
+  "payload": "say Restarting in 1 minute",
+  "time_offset": 60,
+  "continue_on_failure": false
+}
+
+### Delete Task
+DELETE {{baseUrl}}/1/tasks/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

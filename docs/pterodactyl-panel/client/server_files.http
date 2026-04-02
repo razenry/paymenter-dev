@@ -1,0 +1,138 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/files
+@apiKey = {{client_api_key}}
+
+### List Files
+GET {{baseUrl}}/list?directory=/
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get File Contents
+GET {{baseUrl}}/contents?file=server.properties
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Image Contents
+GET {{baseUrl}}/image-contents?file=icon.png
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Download Link
+GET {{baseUrl}}/download?file=server.properties
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Write File
+POST {{baseUrl}}/write?file=test.txt
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: text/plain
+
+Hello World!
+
+### Create Folder
+POST {{baseUrl}}/create-folder
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "new_folder",
+  "root": "/"
+}
+
+### Rename Files
+PUT {{baseUrl}}/rename
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "root": "/",
+  "files": [
+    {
+      "from": "old.txt",
+      "to": "new.txt"
+    }
+  ]
+}
+
+### Copy File
+POST {{baseUrl}}/copy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "location": "test.txt"
+}
+
+### Compress Files
+POST {{baseUrl}}/compress
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "root": "/",
+  "files": ["test.txt", "new_folder"]
+}
+
+### Decompress File
+POST {{baseUrl}}/decompress
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "root": "/",
+  "file": "archive.tar.gz"
+}
+
+### Delete Files
+POST {{baseUrl}}/delete
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "root": "/",
+  "files": ["test.txt"]
+}
+
+### Chmod Files
+POST {{baseUrl}}/chmod
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "root": "/",
+  "files": [
+    {
+      "file": "test.txt",
+      "mode": "0644"
+    }
+  ]
+}
+
+### Pull Remote File
+POST {{baseUrl}}/pull
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "url": "https://example.com/file.zip",
+  "directory": "/",
+  "filename": "downloaded.zip"
+}
+
+### Upload File (Get URL)
+GET {{baseUrl}}/upload
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

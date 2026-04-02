@@ -1,0 +1,189 @@
+@baseUrl = {{panel_url}}/api/application/servers
+@apiKey = {{application_api_key}}
+
+### List Servers
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Server Details
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Server by External ID
+GET {{baseUrl}}/external/ext-123
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Server
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Server Name",
+  "user": 1,
+  "egg": 1,
+  "docker_image": "quay.io/pterodactyl/core:java",
+  "startup": "java -Xms128M -Xmx1024M -jar server.jar",
+  "environment": {
+    "SERVER_JARFILE": "server.jar"
+  },
+  "skip_scripts": false,
+  "oom_disabled": true,
+  "timezone": "UTC",
+  "limits": {
+    "memory": 1024,
+    "swap": 0,
+    "disk": 5120,
+    "io": 500,
+    "cpu": 100,
+    "threads": null
+  },
+  "feature_limits": {
+    "databases": 5,
+    "allocations": 5,
+    "backups": 1,
+    "split_limit": 0
+  },
+  "allocation": {
+    "default": 1
+  },
+  "start_on_completion": false,
+  "skip_wings": false,
+  "billing_expire_date": "2026-12-31"
+}
+
+### Update Server Details
+PATCH {{baseUrl}}/1/details
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Updated Server Name",
+  "user": 1,
+  "external_id": "ext-123",
+  "description": "Server description",
+  "billing_expire_date": "2026-12-31"
+}
+
+### Update Server Build
+PATCH {{baseUrl}}/1/build
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "allocation": 1,
+  "oom_disabled": true,
+  "limits": {
+    "memory": 1024,
+    "swap": 0,
+    "disk": 5120,
+    "io": 500,
+    "cpu": 100,
+    "threads": null
+  },
+  "add_allocations": [2, 3],
+  "remove_allocations": [4],
+  "feature_limits": {
+    "databases": 5,
+    "allocations": 5,
+    "backups": 3
+  },
+  "egg_profile_id": 1
+}
+
+### Update Server Startup
+PATCH {{baseUrl}}/1/startup
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "startup": "java -Xms128M -Xmx1024M -jar server.jar",
+  "environment": {
+    "SERVER_JARFILE": "server.jar"
+  },
+  "egg": 1,
+  "image": "quay.io/pterodactyl/core:java",
+  "skip_scripts": false
+}
+
+### Suspend Server
+POST {{baseUrl}}/1/suspend
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Unsuspend Server
+POST {{baseUrl}}/1/unsuspend
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Reinstall Server
+POST {{baseUrl}}/1/reinstall
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Toggle Install Server
+POST {{baseUrl}}/1/toggle-install
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Delete Server
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Force Delete Server
+DELETE {{baseUrl}}/1/force
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### List Server Databases
+GET {{baseUrl}}/1/databases
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Server Database Details
+GET {{baseUrl}}/1/databases/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Server Database
+POST {{baseUrl}}/1/databases
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "database": "s1_database",
+  "remote": "%",
+  "host": 1
+}
+
+### Reset Server Database Password
+POST {{baseUrl}}/1/databases/1/reset-password
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Delete Server Database
+DELETE {{baseUrl}}/1/databases/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

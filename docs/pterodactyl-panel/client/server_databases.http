@@ -1,0 +1,37 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/databases
+@apiKey = {{client_api_key}}
+
+### List Databases
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### List Available Hosts
+GET {{baseUrl}}/available
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Database
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "database": "my_database",
+  "remote": "%"
+}
+
+### Rotate Password
+POST {{baseUrl}}/1/rotate-password
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Delete Database
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

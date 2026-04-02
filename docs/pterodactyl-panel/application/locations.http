@@ -1,0 +1,42 @@
+@baseUrl = {{panel_url}}/api/application/locations
+@apiKey = {{application_api_key}}
+
+### List Locations
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Location Details
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Location
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "short": "us-east",
+  "long": "United States East Coast"
+}
+
+### Update Location
+PATCH {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "short": "us-east-1",
+  "long": "US East (N. Virginia)"
+}
+
+### Delete Location
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

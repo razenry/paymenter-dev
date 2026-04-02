@@ -1,0 +1,156 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}
+@apiKey = {{client_api_key}}
+
+### Modpacks - Search
+GET {{baseUrl}}/modpacks?provider=curseforge&page=1&page_size=20&search_query=skyfactory
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Modpacks - Get Versions
+GET {{baseUrl}}/modpacks/versions?provider=curseforge&modpack_id=12345
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Modpacks - Install
+POST {{baseUrl}}/modpacks/install
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "provider": "curseforge",
+  "modpack_id": "12345",
+  "modpack_version_id": "67890",
+  "delete_server_files": false
+}
+
+### Minecraft Mods - Search
+GET {{baseUrl}}/minecraft-mods?provider=modrinth&page=1&page_size=20&search_query=jei&mod_loader=fabric&minecraft_version=1.20.1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Mods - Get Versions
+GET {{baseUrl}}/minecraft-mods/versions?provider=modrinth&mod_id=jei&mod_loader=fabric&minecraft_version=1.20.1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Mods - List Installed
+GET {{baseUrl}}/minecraft-mods/installed
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Mods - Install
+POST {{baseUrl}}/minecraft-mods/install
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "provider": "modrinth",
+  "mod_id": "jei",
+  "version_id": "vers-123",
+  "mod_name": "Just Enough Items",
+  "mod_slug": "jei",
+  "mod_loader": "fabric",
+  "force": false
+}
+
+### Minecraft Mods - Uninstall
+DELETE {{baseUrl}}/minecraft-mods/installed/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Mods - Rescan Directory
+POST {{baseUrl}}/minecraft-mods/installed/rescan
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Bedrock Addons - Search
+GET {{baseUrl}}/bedrock-addons?page=1&page_size=20&search_query=furniture&pack_type=all
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Bedrock Addons - List Installed
+GET {{baseUrl}}/bedrock-addons/installed
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Bedrock Addons - List Files
+GET {{baseUrl}}/bedrock-addons/files?addon_id=abc-123
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Bedrock Addons - Preview (Detection)
+POST {{baseUrl}}/bedrock-addons/preview
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "addon_id": "abc-123",
+  "file_id": "file-456"
+}
+
+### Bedrock Addons - Install
+POST {{baseUrl}}/bedrock-addons/install
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "addon_id": "abc-123",
+  "file_id": "file-456",
+  "force": false
+}
+
+### Bedrock Addons - Uninstall
+DELETE {{baseUrl}}/bedrock-addons/installed/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Plugins - Search
+GET {{baseUrl}}/minecraft-plugins?provider=spigotmc&page=1&page_size=20&search_query=essentialsx&minecraft_version=1.20.1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Plugins - Get Versions
+GET {{baseUrl}}/minecraft-plugins/versions?provider=spigotmc&pluginId=essentialsx
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Plugins - Install
+POST {{baseUrl}}/minecraft-plugins/install
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "provider": "spigotmc",
+  "pluginId": "123",
+  "versionId": "456"
+}
+
+### Minecraft Plugins - Link Polymart
+POST {{baseUrl}}/minecraft-plugins/link
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Plugins - Disconnect Polymart
+POST {{baseUrl}}/minecraft-plugins/disconnect
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Plugins - Is Linked Polymart
+GET {{baseUrl}}/minecraft-plugins/is-linked
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Player List
+GET {{baseUrl}}/minecraft/player-list
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Minecraft Bedrock Player Lookup (XUID)
+GET {{baseUrl}}/minecraft/bedrock-player/123456789
+Authorization: Bearer {{apiKey}}
+Accept: application/json

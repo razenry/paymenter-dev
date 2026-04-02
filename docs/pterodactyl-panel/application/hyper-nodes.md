@@ -18,6 +18,7 @@ Creates and initializes a new Hyper Node. This will trigger the automated deploy
 - `limits` (object): `memory`, `cpu`, `disk` settings.
 - `feature_limits` (object): `databases`, `allocations`, `backups` settings.
 - `deploy` (object): `locations` (array), `port_range` (array).
+- `egg_profile_id` (int, optional): The ID of the egg profile to assign to the node.
 
 ---
 

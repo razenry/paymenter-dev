@@ -1,0 +1,41 @@
+@baseUrl = {{panel_url}}/api/client
+@apiKey = {{client_api_key}}
+@serverIdentifier = {{server_id}}
+
+### List Servers
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Server Details
+GET {{baseUrl}}/servers/{{serverIdentifier}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Server Resources
+GET {{baseUrl}}/servers/{{serverIdentifier}}/resources
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Send Power Action
+POST {{baseUrl}}/servers/{{serverIdentifier}}/power
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "signal": "start" // Can be "start", "stop", "restart", or "kill"
+}
+
+### Send Command
+POST {{baseUrl}}/servers/{{serverIdentifier}}/command
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "command": "say Hello World!"
+}

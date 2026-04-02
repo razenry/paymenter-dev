@@ -1,0 +1,66 @@
+@baseUrl = {{panel_url}}/api/application/users
+@apiKey = {{application_api_key}}
+
+### List Users
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get User Details
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get User by External ID
+GET {{baseUrl}}/external/user_123
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create User
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "external_id": "user_123",
+  "username": "johndoe",
+  "email": "john@example.com",
+  "first_name": "John",
+  "last_name": "Doe",
+  "password": "strongpassword",
+  "root_admin": false,
+  "language": "en"
+}
+
+### Update User
+PATCH {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "external_id": "user_123_updated",
+  "username": "johndoe_updated",
+  "email": "john_updated@example.com",
+  "first_name": "John",
+  "last_name": "Smith",
+  "password": "newstrongpassword",
+  "root_admin": true,
+  "language": "en"
+}
+
+### Generate SSO Token
+POST {{baseUrl}}/1/sso
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Delete User
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

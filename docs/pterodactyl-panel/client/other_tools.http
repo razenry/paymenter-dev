@@ -1,0 +1,116 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}
+@apiKey = {{client_api_key}}
+
+### Turbo Boost Status
+GET {{baseUrl}}/turbo/status
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Git Deployment - List Config
+GET {{baseUrl}}/git-deployment
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Git Deployment - Deploy Now
+GET {{baseUrl}}/git-deployment/deploy
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Git Deployment - Store Variable
+POST {{baseUrl}}/git-deployment/variable
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "env_key": "GIT_REPO",
+  "env_value": "https://github.com/user/repo"
+}
+
+### Git Deployment - Generate Webhook
+GET {{baseUrl}}/git-deployment/generate-webhook
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Git Deployment - Disable Webhook
+GET {{baseUrl}}/git-deployment/disable-webhook
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Database GUI - List Users
+GET {{baseUrl}}/database-gui/users?refresh=false
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Database GUI - List Databases
+GET {{baseUrl}}/database-gui/databases?refresh=false
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+
+### Database GUI - Create User
+POST {{baseUrl}}/database-gui/users
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "new_user",
+  "host": "%",
+  "password": "strongpassword123"
+}
+
+### Database GUI - Grant Privileges
+POST {{baseUrl}}/database-gui/users/grant
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "new_user",
+  "host": "%",
+  "database": "my_db",
+  "grant_option": true
+}
+
+### Database GUI - Change Password
+POST {{baseUrl}}/database-gui/users/password
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "new_user",
+  "host": "%",
+  "password": "newstrongpassword456"
+}
+
+### Database GUI - Delete User
+DELETE {{baseUrl}}/database-gui/users
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "username": "new_user",
+  "host": "%"
+}
+
+### Database GUI - Create Database
+POST {{baseUrl}}/database-gui/databases
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "database": "my_new_db"
+}
+
+### Database GUI - Delete Database
+DELETE {{baseUrl}}/database-gui/databases
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "database": "my_new_db"
+}

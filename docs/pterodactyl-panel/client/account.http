@@ -1,0 +1,114 @@
+@baseUrl = {{panel_url}}/api/client
+@apiKey = {{client_api_key}}
+
+### Get Account Details
+GET {{baseUrl}}/account
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Update Email
+PUT {{baseUrl}}/account/email
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "newemail@example.com",
+  "password": "currentpassword"
+}
+
+### Update Password
+PUT {{baseUrl}}/account/password
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "current_password": "currentpassword",
+  "password": "newpassword123",
+  "password_confirmation": "newpassword123"
+}
+
+### Get 2FA QR Code
+GET {{baseUrl}}/account/two-factor
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Enable 2FA
+POST {{baseUrl}}/account/two-factor
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "code": "123456",
+  "password": "currentpassword"
+}
+
+### Disable 2FA
+DELETE {{baseUrl}}/account/two-factor
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "password": "currentpassword"
+}
+
+### List API Keys
+GET {{baseUrl}}/account/api-keys
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create API Key
+POST {{baseUrl}}/account/api-keys
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "description": "My API Key",
+  "allowed_ips": []
+}
+
+### Delete API Key
+DELETE {{baseUrl}}/account/api-keys/identifier
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### List SSH Keys
+GET {{baseUrl}}/account/ssh-keys
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Store SSH Key
+POST {{baseUrl}}/account/ssh-keys
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "My Laptop",
+  "public_key": "ssh-rsa AAAAB3Nza..."
+}
+
+### Support removing SSH Key
+POST {{baseUrl}}/account/ssh-keys/remove
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "fingerprint": "aa:bb:cc..."
+}
+
+### List Activity Logs
+GET {{baseUrl}}/account/activity
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

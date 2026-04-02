@@ -1,0 +1,75 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/settings
+@apiKey = {{client_api_key}}
+
+### Rename Server
+POST {{baseUrl}}/rename
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "New Server Name",
+  "description": "Updated description"
+}
+
+### Reinstall Server
+POST {{baseUrl}}/reinstall
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Toggle Off Reinstall (Internal)
+POST {{baseUrl}}/toggle-reinstall
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Update Docker Image
+PUT {{baseUrl}}/docker-image
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "docker_image": "quay.io/pterodactyl/core:java"
+}
+
+### Update Trash Bin Period
+PUT {{baseUrl}}/trash-bin
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "period": 7
+}
+
+### Change Egg
+PUT {{baseUrl}}/egg
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "egg_id": 1
+}
+
+### Toggle Swap
+POST {{baseUrl}}/swap
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "enable": true
+}
+
+### Set Timezone
+POST {{baseUrl}}/timezone
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "timezone": "UTC"
+}

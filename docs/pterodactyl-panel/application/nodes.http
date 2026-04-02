@@ -1,0 +1,92 @@
+@baseUrl = {{panel_url}}/api/application/nodes
+@apiKey = {{application_api_key}}
+
+### List Nodes
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Node Details
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Get Node Configuration
+GET {{baseUrl}}/1/configuration
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Node
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Node 1",
+  "description": "Description of Node 1",
+  "location_id": 1,
+  "fqdn": "node1.example.com",
+  "scheme": "https",
+  "behind_proxy": false,
+  "maintenance_mode": false,
+  "memory": 1024,
+  "memory_overallocate": 0,
+  "disk": 10240,
+  "disk_overallocate": 0,
+  "upload_size": 100,
+  "daemon_sftp": 2022,
+  "daemon_listen": 8080,
+  "daemon_base": "/var/lib/pterodactyl/volumes",
+  "egg_profile_id": 1
+}
+
+### Update Node
+PATCH {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Node 1 Updated",
+  "description": "Updated Description",
+  "location_id": 1,
+  "fqdn": "node1-new.example.com",
+  "scheme": "https",
+  "behind_proxy": false,
+  "maintenance_mode": false,
+  "memory": 2048,
+  "memory_overallocate": 0,
+  "disk": 20480,
+  "disk_overallocate": 0,
+  "upload_size": 200,
+  "daemon_sftp": 2022,
+  "daemon_listen": 8080,
+  "daemon_base": "/var/lib/pterodactyl/volumes",
+  "egg_profile_id": 1
+}
+
+### Delete Node
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Allocation
+POST {{baseUrl}}/nodes/1/allocations
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "ip": "1.2.3.4",
+  "ports": ["25565", "25566-25570"]
+}
+
+### Delete Allocation
+DELETE {{baseUrl}}/nodes/1/allocations/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

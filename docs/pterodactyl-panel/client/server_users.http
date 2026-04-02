@@ -1,0 +1,50 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/users
+@apiKey = {{client_api_key}}
+
+### List Subusers
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Subuser
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "email": "subuser@example.com",
+  "permissions": [
+    "control.start",
+    "control.stop",
+    "websocket.connect"
+  ]
+}
+
+### Get Subuser
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Update Subuser
+POST {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "permissions": [
+    "control.start",
+    "control.stop",
+    "control.restart",
+    "websocket.connect"
+  ]
+}
+
+### Delete Subuser
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

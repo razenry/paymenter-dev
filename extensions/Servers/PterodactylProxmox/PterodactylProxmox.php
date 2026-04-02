@@ -86,6 +86,18 @@ class PterodactylProxmox extends Server
             $locationList[$location['attributes']['id']] = $location['attributes']['short'];
         }
 
+        // Fetch Egg Profiles
+        $eggProfileList = [];
+        try {
+            $eggProfiles = $this->request('/api/application/nests/egg-profiles');
+            foreach ($eggProfiles['data'] as $profile) {
+                $eggProfileList[$profile['attributes']['id']] = $profile['attributes']['name'];
+            }
+        } catch (Exception $e) {
+            // Log it but don't fail, maybe the panel doesn't support egg profiles yet
+            logger()->error('[pterodactyl] failed to fetch egg profiles', ['error' => $e->getMessage()]);
+        }
+
         return [
             [
                 'name' => 'location_ids',
@@ -95,6 +107,29 @@ class PterodactylProxmox extends Server
                 'options' => $locationList,
                 'multiple' => true,
                 'database_type' => 'array',
+                'required' => false,
+            ],
+            [
+                'name' => 'egg_profile_id',
+                'label' => 'Egg Profile',
+                'type' => 'select',
+                'description' => 'The egg profile to use for this node',
+                'options' => $eggProfileList,
+                'required' => false,
+            ],
+            [
+                'name' => 'unlimited_resources',
+                'label' => 'Unlimited Resources',
+                'type' => 'boolean',
+                'description' => 'Allow this node to use unlimited resources',
+                'required' => false,
+            ],
+            [
+                'name' => 'max_servers',
+                'label' => 'Max Servers',
+                'type' => 'number',
+                'description' => 'The maximum number of servers allowed on this node',
+                'default' => 1,
                 'required' => false,
             ],
             [
@@ -268,10 +303,12 @@ class PterodactylProxmox extends Server
             'max_databases' => (int) $settings['databases'],
             'max_allocations' => (int) $settings['allocations'],
             'max_backups' => (int) $settings['backups'],
+            'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'deploy' => [
                 'locations' => (array) $settings['location_ids'],
                 'port_range' => $portRanges,
             ],
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
             'billing_expire_date' => $service->expires_at ? $service->expires_at->format('Y-m-d') : null,
         ];
 

@@ -1,0 +1,54 @@
+@baseUrl = {{panel_url}}/api/client/servers/{{server_id}}/backups
+@apiKey = {{client_api_key}}
+
+### List Backups
+GET {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Create Backup
+POST {{baseUrl}}
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "name": "Manual Backup",
+  "ignored": ".git\nnode_modules",
+  "is_locked": false
+}
+
+### Get Backup Details
+GET {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Download Backup
+GET {{baseUrl}}/1/download
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Toggle Backup Lock
+POST {{baseUrl}}/1/lock
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+### Restore Backup
+POST {{baseUrl}}/1/restore
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json
+
+{
+  "truncate": false
+}
+
+### Delete Backup
+DELETE {{baseUrl}}/1
+Authorization: Bearer {{apiKey}}
+Accept: application/json
+Content-Type: application/json

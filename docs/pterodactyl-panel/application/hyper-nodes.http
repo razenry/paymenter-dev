@@ -33,7 +33,8 @@ Content-Type: application/json
   "deploy": {
     "locations": [1],
     "port_range": ["25565-25570"]
-  }
+  },
+  "egg_profile_id": 1
 }
 
 ### Upgrade Hyper Node
