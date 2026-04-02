@@ -52,7 +52,7 @@ class PterodactylProxmox extends Server
     public function testConfig(): bool|string
     {
         try {
-            $this->request('/api/application/nodes', 'GET');
+            $this->request('/api/application/hyper-nodes', 'GET');
         } catch (Exception $e) {
             return $e->getMessage();
         }
@@ -249,7 +249,7 @@ class PterodactylProxmox extends Server
     public function createServer(Service $service, $settings, $properties)
     {
         if ($this->getServer($service->id, failIfNotFound: false)) {
-            throw new DisplayException('Node already exists');
+            throw new DisplayException('Hyper Node already exists');
         }
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
@@ -288,7 +288,7 @@ class PterodactylProxmox extends Server
             $portRanges = array_map('trim', explode(',', $settings['port_range']));
         }
 
-        $nodeData = [
+        $hyperNodeData = [
             'external_id' => (string) $service->id,
             'name' => isset($settings['servername']) ? $settings['servername'] : ($this->config('server_prefix') ?? 'PMX-') . $service->id,
             'user' => (int) $user,
@@ -318,8 +318,8 @@ class PterodactylProxmox extends Server
             'billing_expire_date' => $service->expires_at ? $service->expires_at->format('Y-m-d') : null,
         ];
 
-        logger()->debug('creating node', ['data' => $nodeData]);
-        $server = $this->request('/api/application/nodes', 'post', $nodeData);
+        logger()->debug('creating hyper node', ['data' => $hyperNodeData]);
+        $server = $this->request('/api/application/hyper-nodes', 'post', $hyperNodeData);
 
         return [
             'server' => $server['attributes']['id'],
@@ -330,10 +330,10 @@ class PterodactylProxmox extends Server
     private function getServer($id, $failIfNotFound = true, $raw = false)
     {
         try {
-            $response = $this->request('/api/application/nodes/external/' . $id);
+            $response = $this->request('/api/application/hyper-nodes/external/' . $id);
         } catch (Exception $e) {
             if ($failIfNotFound) {
-                throw new DisplayException('Node not found');
+                throw new DisplayException('Hyper Node not found');
             } else {
                 return false;
             }
@@ -352,7 +352,7 @@ class PterodactylProxmox extends Server
             return true;
         }
 
-        $this->request('/api/application/nodes/' . $server . '/suspend', 'post');
+        $this->request('/api/application/hyper-nodes/' . $server . '/suspend', 'post');
 
         return true;
     }
@@ -361,7 +361,7 @@ class PterodactylProxmox extends Server
     {
         $server = $this->getServer($service->id);
 
-        $this->request('/api/application/nodes/' . $server . '/unsuspend', 'post');
+        $this->request('/api/application/hyper-nodes/' . $server . '/unsuspend', 'post');
 
         return true;
     }
@@ -373,7 +373,7 @@ class PterodactylProxmox extends Server
             return true;
         }
 
-        $this->request('/api/application/nodes/' . $server, 'delete');
+        $this->request('/api/application/hyper-nodes/' . $server, 'delete');
 
         return true;
     }
@@ -391,7 +391,7 @@ class PterodactylProxmox extends Server
             'disk' => (int) ($settings['disk'] ?? 10240),
         ];
 
-        $this->request('/api/application/nodes/' . $server['attributes']['id'] . '/upgrade', 'post', $upgradeResourcesData);
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'] . '/upgrade', 'post', $upgradeResourcesData);
 
         // 2. Sync node configuration
         $updateNodeData = [
@@ -422,7 +422,7 @@ class PterodactylProxmox extends Server
             'expired_at' => $service->expires_at ? $service->expires_at->format('Y-m-d H:i:s') : null,
         ];
 
-        $this->request('/api/application/nodes/' . $server['attributes']['id'], 'patch', $updateNodeData);
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateNodeData);
 
         return true;
     }
@@ -480,7 +480,7 @@ class PterodactylProxmox extends Server
             'billing_expire_date' => $newDate,
         ];
 
-        $this->request('/api/application/nodes/' . $server['attributes']['id'], 'patch', $updateData);
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateData);
 
         return true;
     }
@@ -603,7 +603,7 @@ class PterodactylProxmox extends Server
     public function restartServer(Service $service)
     {
         $server = $this->getServer($service->id);
-        $this->request('/api/application/nodes/' . $server . '/restart', 'post');
+        $this->request('/api/application/hyper-nodes/' . $server . '/restart', 'post');
 
         return true;
     }
