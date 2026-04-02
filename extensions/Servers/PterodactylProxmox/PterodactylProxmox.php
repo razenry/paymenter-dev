@@ -389,17 +389,31 @@ class PterodactylProxmox extends Server
 
         // 2. Sync node configuration
         $updateNodeData = [
+            'name' => $server['attributes']['name'],
+            'description' => $server['attributes']['description'],
+            'location_id' => (int) $server['attributes']['location_id'],
+            'fqdn' => $server['attributes']['fqdn'],
+            'scheme' => $server['attributes']['scheme'],
+            'memory' => (int) ($settings['memory'] ?? $server['attributes']['memory']),
+            'memory_overallocate' => (int) $server['attributes']['memory_overallocate'],
+            'disk' => (int) ($settings['disk'] ?? $server['attributes']['disk']),
+            'disk_overallocate' => (int) $server['attributes']['disk_overallocate'],
+            'cpu' => (int) ($settings['cpu'] ?? $server['attributes']['cpu']),
+            'daemonSFTP' => (int) $server['attributes']['daemonSFTP'],
+            'daemonListen' => (int) $server['attributes']['daemonListen'],
             'max_databases' => (int) ($settings['databases'] ?? 0),
             'max_allocations' => (int) ($settings['allocations'] ?? 0),
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
-            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : $server['attributes']['egg_profile_id'],
             'feature_limits' => [
                 'databases' => (int) ($settings['databases'] ?? 0),
                 'allocations' => (int) ($settings['allocations'] ?? 0),
                 'backups' => (int) ($settings['backups'] ?? 0),
             ],
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
+            'is_hyper' => (bool) ($server['attributes']['is_hyper'] ?? true),
+            'expired_at' => $service->expires_at ? $service->expires_at->format('Y-m-d H:i:s') : null,
         ];
 
         $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateNodeData);
@@ -430,22 +444,34 @@ class PterodactylProxmox extends Server
 
         $updateData = [
             'name' => $server['attributes']['name'],
+            'description' => $server['attributes']['description'],
             'external_id' => $server['attributes']['external_id'],
+            'location_id' => (int) $server['attributes']['location_id'],
+            'fqdn' => $server['attributes']['fqdn'],
+            'scheme' => $server['attributes']['scheme'],
             'user' => $server['attributes']['user'],
             'owner_id' => $server['attributes']['owner_id'],
-            'description' => $server['attributes']['description'],
-            'billing_expire_date' => $newDate,
+            'memory' => (int) ($settings['memory'] ?? $server['attributes']['memory']),
+            'memory_overallocate' => (int) $server['attributes']['memory_overallocate'],
+            'disk' => (int) ($settings['disk'] ?? $server['attributes']['disk']),
+            'disk_overallocate' => (int) $server['attributes']['disk_overallocate'],
+            'cpu' => (int) ($settings['cpu'] ?? $server['attributes']['cpu']),
+            'daemonSFTP' => (int) $server['attributes']['daemonSFTP'],
+            'daemonListen' => (int) $server['attributes']['daemonListen'],
             'max_databases' => (int) ($settings['databases'] ?? 0),
             'max_allocations' => (int) ($settings['allocations'] ?? 0),
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
-            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : $server['attributes']['egg_profile_id'],
             'feature_limits' => [
                 'databases' => (int) ($settings['databases'] ?? 0),
                 'allocations' => (int) ($settings['allocations'] ?? 0),
                 'backups' => (int) ($settings['backups'] ?? 0),
             ],
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
+            'is_hyper' => (bool) ($server['attributes']['is_hyper'] ?? true),
+            'expired_at' => $newDate,
+            'billing_expire_date' => $newDate,
         ];
 
         $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateData);
