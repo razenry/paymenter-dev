@@ -299,7 +299,7 @@ class PterodactylProxmox extends Server
                 'allocations' => (int) $settings['allocations'],
                 'backups' => (int) $settings['backups'],
             ],
-            'max_servers' => (int) ($settings['max_servers'] ?? 10),
+            'max_servers' => (int) ($settings['max_servers'] ?? 1),
             'max_databases' => (int) $settings['databases'],
             'max_allocations' => (int) $settings['allocations'],
             'max_backups' => (int) $settings['backups'],
@@ -408,6 +408,7 @@ class PterodactylProxmox extends Server
     public function updateBillingDate(Service $service, string $newDate): bool
     {
         $server = $this->getServer($service->id, raw: true);
+        $settings = array_merge($service->product->settings->pluck('value', 'key')->toArray(), $service->properties->pluck('value', 'key')->toArray());
 
         $updateData = [
             'name' => $server['attributes']['name'],
@@ -416,13 +417,15 @@ class PterodactylProxmox extends Server
             'owner_id' => $server['attributes']['owner_id'],
             'description' => $server['attributes']['description'],
             'billing_expire_date' => $newDate,
+            'max_databases' => (int) ($settings['databases'] ?? 0),
+            'max_allocations' => (int) ($settings['allocations'] ?? 0),
+            'max_backups' => (int) ($settings['backups'] ?? 0),
+            'max_servers' => (int) ($settings['max_servers'] ?? 1),
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
+            'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
         ];
 
-        $this->request(
-            '/api/application/hyper-nodes/' . $server['attributes']['id'] . '/update',
-            'post',
-            $updateData
-        );
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateData);
 
         return true;
     }
