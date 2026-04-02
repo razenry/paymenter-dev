@@ -378,13 +378,31 @@ class PterodactylProxmox extends Server
 
         $settings = array_merge($settings, $properties);
 
-        $updateServerData = [
-            'memory' => (int) $settings['memory'],
-            'cpu' => (int) $settings['cpu'],
-            'disk' => (int) $settings['disk'],
+        // 1. Upgrade resources
+        $upgradeResourcesData = [
+            'memory' => (int) ($settings['memory'] ?? 1024),
+            'cpu' => (int) ($settings['cpu'] ?? 100),
+            'disk' => (int) ($settings['disk'] ?? 10240),
         ];
 
-        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'] . '/upgrade', 'post', $updateServerData);
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'] . '/upgrade', 'post', $upgradeResourcesData);
+
+        // 2. Sync node configuration
+        $updateNodeData = [
+            'max_databases' => (int) ($settings['databases'] ?? 0),
+            'max_allocations' => (int) ($settings['allocations'] ?? 0),
+            'max_backups' => (int) ($settings['backups'] ?? 0),
+            'max_servers' => (int) ($settings['max_servers'] ?? 1),
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
+            'feature_limits' => [
+                'databases' => (int) ($settings['databases'] ?? 0),
+                'allocations' => (int) ($settings['allocations'] ?? 0),
+                'backups' => (int) ($settings['backups'] ?? 0),
+            ],
+            'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
+        ];
+
+        $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateNodeData);
 
         return true;
     }
@@ -422,6 +440,11 @@ class PterodactylProxmox extends Server
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
             'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
+            'feature_limits' => [
+                'databases' => (int) ($settings['databases'] ?? 0),
+                'allocations' => (int) ($settings['allocations'] ?? 0),
+                'backups' => (int) ($settings['backups'] ?? 0),
+            ],
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
         ];
 
