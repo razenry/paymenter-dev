@@ -71,8 +71,14 @@ class PterodactylProxmox extends Server
 
         if (!$response->successful()) {
             $body = $response->json();
-            logger()->debug('[pterodactyl] failed to execute api call', $body['errors']);
-            throw new DisplayException($body['errors'][0]['detail']);
+            $errorDetail = $body['errors'][0]['detail'] ?? 'An unknown error occurred.';
+
+            if (str_contains($errorDetail, 'The daemon configuration <strong>has been updated</strong>')) {
+                return $body;
+            }
+
+            logger()->debug('[pterodactyl] failed to execute api call', $body['errors'] ?? []);
+            throw new DisplayException($errorDetail);
         }
 
         return $response->json() ?? [];
