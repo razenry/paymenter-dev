@@ -91,7 +91,7 @@ class PterodactylProxmox extends Server
         try {
             $eggProfiles = $this->request('/api/application/nests/egg-profiles');
             foreach ($eggProfiles['data'] as $profile) {
-                $eggProfileList[$profile['attributes']['id']] = $profile['attributes']['name'];
+                $eggProfileList[$profile['attributes']['id']] = $profile['attributes']['label'];
             }
         } catch (Exception $e) {
             // Log it but don't fail, maybe the panel doesn't support egg profiles yet

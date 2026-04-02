@@ -34,4 +34,4 @@ Operations for managing all servers on the panel:
 Operations for managing nests, eggs and profiles:
 - List/View Nests
 - List/View Eggs in Nest
-- List Egg Profiles
+- [List Egg Profiles](./egg-profiles.md) ([HTTP](./nests_eggs.http))

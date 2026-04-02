@@ -26,6 +26,7 @@ Accept: application/json
 Content-Type: application/json
 
 ### List Egg Profiles
+# Documentation and Example Response: ./egg-profiles.md
 GET {{baseUrl}}/egg-profiles
 Authorization: Bearer {{apiKey}}
 Accept: application/json
