@@ -451,12 +451,9 @@ class PterodactylProxmox extends Server
         $updateData = [
             'name' => $server['attributes']['name'],
             'description' => $server['attributes']['description'],
-            'external_id' => $server['attributes']['external_id'],
             'location_id' => (int) $server['attributes']['location_id'],
             'fqdn' => $server['attributes']['fqdn'],
             'scheme' => $server['attributes']['scheme'],
-            'user' => $server['attributes']['user'],
-            'owner_id' => $server['attributes']['owner_id'],
             'memory' => (int) ($settings['memory'] ?? $server['attributes']['memory']),
             'memory_overallocate' => (int) $server['attributes']['memory_overallocate'],
             'disk' => (int) ($settings['disk'] ?? $server['attributes']['disk']),
@@ -477,7 +474,6 @@ class PterodactylProxmox extends Server
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'is_hyper' => (bool) ($server['attributes']['is_hyper'] ?? true),
             'expired_at' => $newDate,
-            'billing_expire_date' => $newDate,
         ];
 
         $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'], 'patch', $updateData);
