@@ -120,7 +120,7 @@ class PterodactylProxmox extends Server
             [
                 'name' => 'unlimited_resources',
                 'label' => 'Unlimited Resources',
-                'type' => 'boolean',
+                'type' => 'checkbox',
                 'description' => 'Allow this node to use unlimited resources',
                 'required' => false,
             ],
