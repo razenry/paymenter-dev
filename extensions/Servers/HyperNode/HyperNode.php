@@ -294,7 +294,7 @@ class PterodactylProxmox extends Server
             'user' => (int) $user,
             'owner_id' => (int) $user,
             'location_id' => !empty($settings['location_ids']) ? $settings['location_ids'][0] : null,
-            'description' => 'Managed by Paymenter',
+            'description' => '',
             'limits' => [
                 'memory' => (int) $settings['memory'],
                 'cpu' => (int) $settings['cpu'],
