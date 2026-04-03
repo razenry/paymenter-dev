@@ -105,13 +105,13 @@ class RaznarVM extends Server
                 'type' => 'select',
                 'description' => 'Location where the server will be deployed',
                 'options' => $locationList,
-                'required' => true,
+                'required' => false,
             ],
             [
                 'name' => 'cpu',
                 'label' => 'CPU Cores',
                 'type' => 'number',
-                'required' => true,
+                'required' => false,
                 'min_value' => 1,
                 'description' => 'Number of CPU cores',
             ],
@@ -120,7 +120,7 @@ class RaznarVM extends Server
                 'label' => 'Memory',
                 'type' => 'number',
                 'suffix' => 'MiB',
-                'required' => true,
+                'required' => false,
                 'min_value' => 128,
             ],
             [
@@ -128,7 +128,7 @@ class RaznarVM extends Server
                 'label' => 'Disk Size',
                 'type' => 'number',
                 'suffix' => 'GB',
-                'required' => true,
+                'required' => false,
                 'min_value' => 1,
             ],
             [
@@ -220,7 +220,19 @@ class RaznarVM extends Server
         $settings = array_merge($settings, $properties);
 
         if (empty($settings['location_id'])) {
-            throw new DisplayException('Location ID is missing. Please check your product settings.');
+            throw new DisplayException('Location ID is missing. Please check your product settings or configurable options.');
+        }
+
+        if (empty($settings['cpu'])) {
+            throw new DisplayException('CPU Cores are missing. Please check your product settings or configurable options.');
+        }
+
+        if (empty($settings['memory'])) {
+            throw new DisplayException('Memory is missing. Please check your product settings or configurable options.');
+        }
+
+        if (empty($settings['disk_size'])) {
+            throw new DisplayException('Disk Size is missing. Please check your product settings or configurable options.');
         }
 
         // 2. Pre-flight user setup (so it's already done before the job)
