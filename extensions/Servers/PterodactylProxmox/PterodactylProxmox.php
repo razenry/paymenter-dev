@@ -254,24 +254,6 @@ class PterodactylProxmox extends Server
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
 
-        // Default values if null
-        $defaults = [
-            'memory' => 1024,
-            'disk' => 10240,
-            'cpu' => 100,
-            'databases' => 0,
-            'allocations' => 0,
-            'backups' => 0,
-            'location_ids' => [],
-            'port_range' => [],
-        ];
-
-        foreach ($defaults as $key => $value) {
-            if (!isset($settings[$key]) || $settings[$key] === null || empty($settings[$key])) {
-                $settings[$key] = $value;
-            }
-        }
-
         $orderUser = $service->user;
         $user = $this->getOrCreateUserId($orderUser);
 
@@ -293,25 +275,25 @@ class PterodactylProxmox extends Server
             'name' => isset($settings['servername']) ? $settings['servername'] : ($this->config('server_prefix') ?? 'PMX-') . $service->id,
             'user' => (int) $user,
             'owner_id' => (int) $user,
-            'location_id' => !empty($settings['location_ids']) ? $settings['location_ids'][0] : null,
+            'location_id' => !empty($settings['location_ids']) ? (int) $settings['location_ids'][0] : null,
             'description' => '',
             'limits' => [
-                'memory' => (int) $settings['memory'],
-                'cpu' => (int) $settings['cpu'],
-                'disk' => (int) $settings['disk'],
+                'memory' => (int) ($settings['memory'] ?? 0),
+                'cpu' => (int) ($settings['cpu'] ?? 0),
+                'disk' => (int) ($settings['disk'] ?? 0),
             ],
             'feature_limits' => [
-                'databases' => (int) $settings['databases'],
-                'allocations' => (int) $settings['allocations'],
-                'backups' => (int) $settings['backups'],
+                'databases' => (int) ($settings['databases'] ?? 0),
+                'allocations' => (int) ($settings['allocations'] ?? 0),
+                'backups' => (int) ($settings['backups'] ?? 0),
             ],
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
-            'max_databases' => (int) $settings['databases'],
-            'max_allocations' => (int) $settings['allocations'],
-            'max_backups' => (int) $settings['backups'],
+            'max_databases' => (int) ($settings['databases'] ?? 0),
+            'max_allocations' => (int) ($settings['allocations'] ?? 0),
+            'max_backups' => (int) ($settings['backups'] ?? 0),
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'deploy' => [
-                'locations' => (array) $settings['location_ids'],
+                'locations' => array_map('intval', (array) $settings['location_ids']),
                 'port_range' => $portRanges,
             ],
             'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
@@ -386,9 +368,9 @@ class PterodactylProxmox extends Server
 
         // 1. Upgrade resources
         $upgradeResourcesData = [
-            'memory' => (int) ($settings['memory'] ?? 1024),
-            'cpu' => (int) ($settings['cpu'] ?? 100),
-            'disk' => (int) ($settings['disk'] ?? 10240),
+            'memory' => (int) ($settings['memory'] ?? 0),
+            'cpu' => (int) ($settings['cpu'] ?? 0),
+            'disk' => (int) ($settings['disk'] ?? 0),
         ];
 
         $this->request('/api/application/hyper-nodes/' . $server['attributes']['id'] . '/upgrade', 'post', $upgradeResourcesData);
@@ -411,7 +393,7 @@ class PterodactylProxmox extends Server
             'max_allocations' => (int) ($settings['allocations'] ?? 0),
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
-            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : $server['attributes']['egg_profile_id'],
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : (int) $server['attributes']['egg_profile_id'],
             'feature_limits' => [
                 'databases' => (int) ($settings['databases'] ?? 0),
                 'allocations' => (int) ($settings['allocations'] ?? 0),
@@ -465,7 +447,7 @@ class PterodactylProxmox extends Server
             'max_allocations' => (int) ($settings['allocations'] ?? 0),
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
-            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : $server['attributes']['egg_profile_id'],
+            'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : (int) $server['attributes']['egg_profile_id'],
             'feature_limits' => [
                 'databases' => (int) ($settings['databases'] ?? 0),
                 'allocations' => (int) ($settings['allocations'] ?? 0),
