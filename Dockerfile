@@ -91,9 +91,8 @@ COPY --from=vendor /app/vendor /app/vendor
 # Bring in the compiled assets from the frontend stage.
 COPY --from=frontend /app/public /app/public
 
-# Final setup: Environment file, directory structure, permissions, and cron.
-RUN cp .env.example .env \
-    && mkdir -p /var/run/php /var/run/nginx storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+# Final setup: Directory structure, permissions, and cron.
+RUN mkdir -p /var/run/php /var/run/nginx storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache \
     && chown -R nginx:nginx . \
     && echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" >> /var/spool/cron/crontabs/root
