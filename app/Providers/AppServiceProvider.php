@@ -134,8 +134,6 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Ensure storage directories exist with proper permissions
-        $this->ensureStorageDirectoriesExist();
 
         // Change livewire url
         Livewire::setUpdateRoute(function ($handle) {
@@ -213,28 +211,4 @@ class AppServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Ensure all required storage directories exist with proper permissions.
-     */
-    protected function ensureStorageDirectoriesExist(): void
-    {
-        $directories = [
-            storage_path('app/public'),
-            storage_path('framework/cache/data'),
-            storage_path('framework/sessions'),
-            storage_path('framework/views'),
-            storage_path('framework/testing'),
-            storage_path('logs'),
-        ];
-
-        foreach ($directories as $directory) {
-            if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
-            }
-            // Ensure directory is writable
-            if (is_dir($directory) && !is_writable($directory)) {
-                chmod($directory, 0755);
-            }
-        }
-    }
 }

@@ -48,7 +48,7 @@ FROM --platform=$TARGETOS/$TARGETARCH php:8.4-fpm-alpine AS production
 WORKDIR /app
 
 # Define dependencies as variables for maintainability.
-ENV RUNTIME_DEPS="nginx supervisor dcron curl git libpng libxml2 libzip icu gmp netcat-openbsd"
+ENV RUNTIME_DEPS="nginx supervisor dcron curl git libpng libxml2 libzip icu gmp netcat-openbsd su-exec"
 ENV BUILD_DEPS="autoconf make g++ gcc libc-dev linux-headers libpng-dev libxml2-dev libzip-dev icu-dev gmp-dev"
 
 # Install runtime dependencies and build PHP extensions in one clean layer.
@@ -78,12 +78,14 @@ COPY .gitlab/docker/supervisord.conf /etc/supervisord.conf
 COPY .gitlab/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
 
 # Copy application source using ownership flag to avoid massive chown layers.
-COPY --chown=nginx:nginx . .
-COPY --chown=nginx:nginx --from=vendor /app/vendor /app/vendor
-COPY --chown=nginx:nginx --from=frontend /app/public /app/public
+COPY . .
+COPY --from=vendor /app/vendor /app/vendor
+COPY --from=frontend /app/public /app/public
 
 # Setup scheduler crontab (running as nginx to avoid permission errors)
-RUN echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" > /var/spool/cron/crontabs/nginx
+RUN echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" > /var/spool/cron/crontabs/nginx \
+    && chown nginx:nginx /var/spool/cron/crontabs/nginx \
+    && chmod 0600 /var/spool/cron/crontabs/nginx
 
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost/ || exit 1
