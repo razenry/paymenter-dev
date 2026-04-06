@@ -42,20 +42,19 @@ mkdir -p \
   /app/storage/framework/{cache/data,sessions,views,testing} \
   /app/storage/logs
 
-# Set Ownership and Permissions BEFORE running any commands 
-# to prevent root-owned log files from being created.
+
+echo "== Running migrations =="
+php artisan migrate --seed --force
+
+# Ownership (ONLY writable paths)
 chown -R nginx:nginx \
   /app/storage \
   /app/bootstrap/cache \
   /var/log/nginx \
   /var/run/nginx
 
-# More permissive permissions for Docker volumes logic across OSes
-chmod -R 777 /app/storage /app/bootstrap/cache
-
-
-echo "== Running migrations =="
-su-exec nginx php artisan migrate --seed --force
+# Permissions (no recursive chown again)
+chmod -R 775 /app/storage /app/bootstrap/cache
 
 
 echo "== Starting cron =="
