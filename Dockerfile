@@ -1,12 +1,11 @@
 # Stage 1: PHP Dependencies (Composer)
-# We use a specific composer image to get the latest version and binary easily.
 FROM --platform=$TARGETOS/$TARGETARCH composer:2 AS vendor
 WORKDIR /app
 
 # Copy only the files needed for composer to leverage Docker layer caching.
 COPY composer.json composer.lock ./
 
-# Install production dependencies without scripts or autoloader to keep it fast and cached.
+# Install production dependencies without scripts or autoloader for caching.
 RUN composer install \
     --no-dev \
     --no-interaction \
@@ -15,24 +14,18 @@ RUN composer install \
     --prefer-dist \
     --ignore-platform-reqs
 
-# Copy the entire source to generate a production-ready autoloader.
-# This ensures that classmaps and services are correctly discovered.
+# Generate optimized autoloader after copying source code.
 COPY . .
-RUN composer install \
-    --no-dev \
-    --no-interaction \
-    --optimize-autoloader \
-    --ignore-platform-reqs
+RUN composer dump-autoload --optimize --no-dev --classmap-authoritative
 
 
 # Stage 2: Frontend Assets (Node.js)
-# We use Node to compile the Vite themes and assets.
 FROM --platform=$TARGETOS/$TARGETARCH node:22-alpine AS frontend
 WORKDIR /app
 
 # Copy package files first for caching.
 COPY package.json package-lock.json ./
-RUN npm install --no-audit && rm -rf /root/.npm
+RUN npm ci --no-audit && rm -rf /root/.npm
 
 # Copy source files needed for Vite compilation and Tailwind scanning.
 COPY vite.js ./
@@ -43,7 +36,7 @@ COPY app/ app/
 COPY extensions/ extensions/
 
 # Copy Composer vendor directory as some frontend assets (like Filament) 
-# import CSS or scan for classes inside vendor packages.
+# scan for classes inside vendor packages.
 COPY --from=vendor /app/vendor /app/vendor
 
 # Execute the theme building process.
@@ -51,15 +44,14 @@ RUN npm run build
 
 
 # Stage 3: Production Runtime (Alpine-based PHP-FPM)
-# This is the final image that will be deployed.
 FROM --platform=$TARGETOS/$TARGETARCH php:8.4-fpm-alpine AS production
 WORKDIR /app
 
-# Define runtime and build-time package variables for clarity.
-ENV BUILD_DEPS="autoconf make g++ gcc libc-dev linux-headers libpng-dev libxml2-dev libzip-dev icu-dev gmp-dev"
+# Define dependencies as variables for maintainability.
 ENV RUNTIME_DEPS="nginx supervisor dcron curl git libpng libxml2 libzip icu gmp netcat-openbsd"
+ENV BUILD_DEPS="autoconf make g++ gcc libc-dev linux-headers libpng-dev libxml2-dev libzip-dev icu-dev gmp-dev"
 
-# Install runtime dependencies and build PHP extensions in a single optimized layer.
+# Install runtime dependencies and build PHP extensions in one clean layer.
 RUN apk add --no-cache --update $RUNTIME_DEPS \
     && apk add --no-cache --virtual .build-deps $BUILD_DEPS \
     && docker-php-ext-configure zip \
@@ -74,33 +66,27 @@ RUN apk add --no-cache --update $RUNTIME_DEPS \
     && pecl install redis \
     && docker-php-ext-enable redis \
     && apk del .build-deps \
-    && rm -rf /tmp/pear /var/cache/apk/*
+    && rm -rf /tmp/pear /var/cache/apk/* \
+    && mkdir -p /var/run/php /var/run/nginx storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
 
-# Copy configuration files from the GitLab-specific directory.
+# Copy configuration files
 COPY .gitlab/docker/default.conf /etc/nginx/http.d/default.conf
 COPY .gitlab/docker/www.conf /usr/local/etc/php-fpm.conf
 COPY .gitlab/docker/supervisord.conf /etc/supervisord.conf
 COPY .gitlab/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
 
-# Copy the application source code (filtered by .dockerignore).
-COPY . .
+# Copy application source using ownership flag to avoid massive chown layers.
+COPY --chown=nginx:nginx . .
+COPY --chown=nginx:nginx --from=vendor /app/vendor /app/vendor
+COPY --chown=nginx:nginx --from=frontend /app/public /app/public
 
-# Bring in the PHP dependencies from the vendor stage.
-COPY --from=vendor /app/vendor /app/vendor
+# Setup scheduler crontab (running as nginx to avoid permission errors)
+RUN echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" > /var/spool/cron/crontabs/nginx
 
-# Bring in the compiled assets from the frontend stage.
-COPY --from=frontend /app/public /app/public
-
-# Final setup: Directory structure, permissions, and cron.
-RUN mkdir -p /var/run/php /var/run/nginx storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache \
-    && chown -R nginx:nginx . \
-    && echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" >> /var/spool/cron/crontabs/root
-
-# Optional: Add a healthcheck to ensure the container is healthy.
 HEALTHCHECK --interval=60s --timeout=10s --start-period=30s --retries=3 \
     CMD curl -f http://localhost/ || exit 1
 
 ENTRYPOINT [ "/bin/ash", ".gitlab/docker/entrypoint.sh" ]
 CMD [ "supervisord", "-n", "-c", "/etc/supervisord.conf" ]
-
