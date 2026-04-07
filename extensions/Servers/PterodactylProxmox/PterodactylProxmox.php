@@ -248,12 +248,15 @@ class PterodactylProxmox extends Server
 
     public function createServer(Service $service, $settings, $properties)
     {
-        if ($this->getServer($service->id, failIfNotFound: false)) {
-            throw new DisplayException('Hyper Node already exists');
-        }
+        logger()->debug('getting hyper node', ['id' => $service->id]);
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
+        logger()->debug('settings', ['settings' => $settings]);
 
+        if ($this->getServer($service->id, failIfNotFound: false)) {
+            logger()->debug('hyper node already exists', ['id' => $service->id]);
+            throw new DisplayException('Hyper Node already exists');
+        }
         $orderUser = $service->user;
         $user = $this->getOrCreateUserId($orderUser);
 
@@ -282,15 +285,10 @@ class PterodactylProxmox extends Server
                 'cpu' => (int) ($settings['cpu'] ?? 0),
                 'disk' => (int) ($settings['disk'] ?? 0),
             ],
-            'feature_limits' => [
-                'databases' => (int) ($settings['databases'] ?? 0),
-                'allocations' => (int) ($settings['allocations'] ?? 0),
-                'backups' => (int) ($settings['backups'] ?? 0),
-            ],
-            'max_servers' => (int) ($settings['max_servers'] ?? 1),
             'max_databases' => (int) ($settings['databases'] ?? 0),
             'max_allocations' => (int) ($settings['allocations'] ?? 0),
             'max_backups' => (int) ($settings['backups'] ?? 0),
+            'max_servers' => (int) ($settings['max_servers'] ?? 1),
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'deploy' => [
                 'locations' => array_map('intval', (array) $settings['location_ids']),
@@ -311,6 +309,7 @@ class PterodactylProxmox extends Server
 
     private function getServer($id, $failIfNotFound = true, $raw = false)
     {
+
         try {
             $response = $this->request('/api/application/hyper-nodes/external/' . $id);
         } catch (Exception $e) {
@@ -394,11 +393,6 @@ class PterodactylProxmox extends Server
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
             'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : (int) $server['attributes']['egg_profile_id'],
-            'feature_limits' => [
-                'databases' => (int) ($settings['databases'] ?? 0),
-                'allocations' => (int) ($settings['allocations'] ?? 0),
-                'backups' => (int) ($settings['backups'] ?? 0),
-            ],
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'is_hyper' => (bool) ($server['attributes']['is_hyper'] ?? true),
             'expired_at' => $service->expires_at ? $service->expires_at->format('Y-m-d H:i:s') : null,
