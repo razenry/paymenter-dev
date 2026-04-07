@@ -274,17 +274,18 @@ class PterodactylProxmox extends Server
         }
 
         $hyperNodeData = [
+            'is_hyper' => true,
             'external_id' => (string) $service->id,
             'name' => isset($settings['servername']) ? $settings['servername'] : ($this->config('server_prefix') ?? 'PMX-') . $service->id,
             'user' => (int) $user,
             'owner_id' => (int) $user,
             'location_id' => !empty($settings['location_ids']) ? (int) $settings['location_ids'][0] : null,
             'description' => '',
-            'limits' => [
-                'memory' => (int) ($settings['memory'] ?? 0),
-                'cpu' => (int) ($settings['cpu'] ?? 0),
-                'disk' => (int) ($settings['disk'] ?? 0),
-            ],
+            'memory' => (int) ($settings['memory'] ?? 0),
+            'memory_overallocate' => 0,
+            'cpu' => (int) ($settings['cpu'] ?? 0),
+            'disk' => (int) ($settings['disk'] ?? 0),
+            'disk_overallocate' => 0,
             'max_databases' => (int) ($settings['databases'] ?? 0),
             'max_allocations' => (int) ($settings['allocations'] ?? 0),
             'max_backups' => (int) ($settings['backups'] ?? 0),
