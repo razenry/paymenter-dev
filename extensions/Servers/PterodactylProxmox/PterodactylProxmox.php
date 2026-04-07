@@ -443,11 +443,6 @@ class PterodactylProxmox extends Server
             'max_backups' => (int) ($settings['backups'] ?? 0),
             'max_servers' => (int) ($settings['max_servers'] ?? 1),
             'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : (int) $server['attributes']['egg_profile_id'],
-            'feature_limits' => [
-                'databases' => (int) ($settings['databases'] ?? 0),
-                'allocations' => (int) ($settings['allocations'] ?? 0),
-                'backups' => (int) ($settings['backups'] ?? 0),
-            ],
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'is_hyper' => (bool) ($server['attributes']['is_hyper'] ?? true),
             'expired_at' => $newDate,
