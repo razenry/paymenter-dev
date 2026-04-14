@@ -8,8 +8,8 @@ WORKDIR /app
 # 1. Combine all apk, ext, pecl, and cleanup into ONE RUN layer
 #    Avoids intermediate layers carrying build tool bloat
 RUN apk add --no-cache ca-certificates dcron curl git supervisor tar unzip \
-        nginx libpng-dev libxml2-dev libzip-dev icu-dev autoconf make g++ gcc \
-        libc-dev linux-headers gmp-dev \
+    nginx libpng-dev libxml2-dev libzip-dev icu-dev autoconf make g++ gcc \
+    libc-dev linux-headers gmp-dev \
     && docker-php-ext-configure zip \
     && docker-php-ext-install bcmath gd pdo_mysql zip intl sockets gmp \
     && pecl install redis \
@@ -56,9 +56,9 @@ WORKDIR /app
 
 # 8. Runtime-only apk packages — no build tools at all
 RUN apk add --no-cache ca-certificates dcron curl supervisor tar unzip \
-        nginx libpng libxml2 libzip icu-libs gmp
+    nginx libpng libxml2 libzip icu-libs gmp
 
-COPY .gitlab/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
+COPY .github/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
 
 # 9. Copy only compiled artifacts from prior stages — not the full build context
 COPY --from=php-builder /usr/local/lib/php/extensions /usr/local/lib/php/extensions
@@ -75,14 +75,14 @@ RUN cp .env.example .env \
     && chown -R nginx:nginx . \
     && rm /usr/local/etc/php-fpm.conf \
     && echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" \
-        >> /var/spool/cron/crontabs/root \
+    >> /var/spool/cron/crontabs/root \
     && mkdir -p /var/run/php /var/run/nginx \
     # 11. Purge apk cache in final image too
     && rm -rf /var/cache/apk/*
 
-COPY .gitlab/docker/default.conf /etc/nginx/http.d/default.conf
-COPY .gitlab/docker/www.conf     /usr/local/etc/php-fpm.conf
-COPY .gitlab/docker/supervisord.conf /etc/supervisord.conf
+COPY .github/docker/default.conf /etc/nginx/http.d/default.conf
+COPY .github/docker/www.conf     /usr/local/etc/php-fpm.conf
+COPY .github/docker/supervisord.conf /etc/supervisord.conf
 
-ENTRYPOINT ["/bin/ash", ".gitlab/docker/entrypoint.sh"]
+ENTRYPOINT ["/bin/ash", ".github/docker/entrypoint.sh"]
 CMD ["supervisord", "-n", "-c", "/etc/supervisord.conf"]

@@ -26,8 +26,6 @@ tests
 docker-compose*.yml
 Dockerfile
 .dockerignore
-.gitlab-ci.yml
-.github
 docs
 TODO.MD
 phpstan.neon
