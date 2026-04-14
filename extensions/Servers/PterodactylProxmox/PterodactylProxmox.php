@@ -324,6 +324,8 @@ class PterodactylProxmox extends Server
             return $response;
         }
 
+        
+
         return $response['attributes']['id'] ?? false;
     }
 
