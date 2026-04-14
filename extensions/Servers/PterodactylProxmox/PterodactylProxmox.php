@@ -293,8 +293,8 @@ class PterodactylProxmox extends Server
             'unlimited_resources' => (bool) ($settings['unlimited_resources'] ?? false),
             'deploy' => [
                 'locations' => array_map('intval', (array) $settings['location_ids']),
-                'port_range' => $portRanges,
             ],
+            'port_range' => $portRanges,
             'egg_profile_id' => !empty($settings['egg_profile_id']) ? (int) $settings['egg_profile_id'] : null,
             'billing_expire_date' => $service->expires_at ? $service->expires_at->format('Y-m-d') : null,
         ];
@@ -324,7 +324,7 @@ class PterodactylProxmox extends Server
             return $response;
         }
 
-        
+
 
         return $response['attributes']['id'] ?? false;
     }
