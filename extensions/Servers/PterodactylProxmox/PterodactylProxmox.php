@@ -252,9 +252,9 @@ class PterodactylProxmox extends Server
         // Smash the properties into the settings
         $settings = array_merge($settings, $properties);
         logger()->debug('settings', ['settings' => $settings]);
-
-        if ($this->getServer($service->id, failIfNotFound: false)) {
-            logger()->debug('hyper node already exists', ['id' => $service->id]);
+        $serverData = $this->getServer($service->id, failIfNotFound: false);
+        if ($serverData) {
+            logger()->debug('hyper node already exists', ['id' => $service->id, 'data' => $serverData]);
             throw new DisplayException('Hyper Node already exists');
         }
         $orderUser = $service->user;
