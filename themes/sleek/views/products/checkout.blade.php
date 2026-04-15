@@ -191,13 +191,13 @@
                                 <span class="text-lg font-semibold text-primary">{{ $total }}</span>
                             </div>
 
-                            @if ($total->setup_fee && $plan->type == 'recurring')
+                            @if ($total->has_setup_fee && $plan->type == 'recurring')
                                 <div class="flex flex-col text-sm mt-1">
                                     <span class="text-base/60">
                                         {{ __('product.then_after_x', ['time' => $plan->billing_period . ' ' . trans_choice(__('services.billing_cycles.' . $plan->billing_unit), $plan->billing_period)]) }}:
                                     </span>
                                     <span class="font-medium">
-                                        {{ $total->format($total->price - $total->setup_fee) }}
+                                        {{ $total->format($total->price) }}
                                     </span>
                                 </div>
                             @endif
