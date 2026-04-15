@@ -6,7 +6,10 @@ use App\Admin\Resources\ConfigOptionResource\Pages\CreateConfigOption;
 use App\Admin\Resources\ConfigOptionResource\Pages\EditConfigOption;
 use App\Admin\Resources\ConfigOptionResource\Pages\ListConfigOptions;
 use App\Models\ConfigOption;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ReplicateAction;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -150,6 +153,12 @@ class ConfigOptionResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                ReplicateAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
             ])
             ->defaultSort(function (Builder $query): Builder {
                 return $query

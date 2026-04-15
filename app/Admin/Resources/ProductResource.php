@@ -12,7 +12,10 @@ use App\Models\Product;
 use App\Models\Server;
 use Exception;
 use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ReplicateAction;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
@@ -321,6 +324,12 @@ class ProductResource extends Resource
             ])
             ->recordActions([
                 EditAction::make(),
+                ReplicateAction::make(),
+            ])
+            ->toolbarActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
             ])
             ->defaultSort(fn(Builder $query) => $query->orderBy('sort', 'asc'))
             ->defaultGroup('category.name');
