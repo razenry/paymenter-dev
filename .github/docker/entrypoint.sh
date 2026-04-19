@@ -1,13 +1,13 @@
-#!/bin/bash -e
+#!/bin/ash -e
 cd /app
 
 echo "== Preparing filesystem =="
+# Base dirs (only what is actually needed)
 mkdir -p \
   /var/log/nginx \
   /var/run/nginx \
   /var/log/supervisord \
-  /app/storage/logs \
-  /app/storage/framework/{cache,sessions,views} \
+  /app/storage \
   /app/bootstrap/cache
 
 echo "== Loading environment =="
@@ -17,47 +17,48 @@ if [ -f /app/.env ]; then
 fi
 
 if [ -z "$DB_PORT" ]; then
-  echo "DB_PORT not specified, defaulting to 3306"
   DB_PORT=3306
   export DB_PORT
 fi
 
-## check for DB up before starting the panel
-echo "Checking database status."
-until nc -z -w30 $DB_HOST $DB_PORT
-do
+echo "== Waiting for database =="
+until nc -z -w5 "$DB_HOST" "$DB_PORT"; do
   echo "Waiting for database connection..."
   sleep 1
 done
+echo "Database is up"
 
-## check if storage symlink exists, if not create it
+echo "== Storage setup =="
+
+# Storage symlink
 if [ ! -L /app/public/storage ]; then
-  echo "Creating storage symlink."
   rm -rf /app/public/storage
   ln -s /app/storage/app/public /app/public/storage
-  echo "Storage symlink created."
-else
-  echo "Storage symlink already exists."
 fi
 
-## Set permissions
-echo "Setting permissions (777) for storage/cache to bypass volume mount issues."
-chmod -R 777 /app/storage /app/bootstrap/cache
-chown -R www-data:www-data /app/storage /app/bootstrap/cache /app/themes /app/extensions
+# Storage structure
+mkdir -p \
+  /app/storage/app/public \
+  /app/storage/framework/{cache/data,sessions,views,testing} \
+  /app/storage/logs
 
-## make sure the db is set up
-echo "Migrating and Seeding D.B"
+
+echo "== Running migrations =="
 php artisan migrate --seed --force
 
-## Re-fix storage ownership – the artisan commands above may have
-## created new log/cache/view files as root.
-echo "Re-fixing storage permissions after migration."
-chmod -R 777 /app/storage /app/bootstrap/cache
-chown -R www-data:www-data /app/storage /app/bootstrap/cache
+# Ownership (ONLY writable paths)
+chown -R nginx:nginx \
+  /app/storage \
+  /app/bootstrap/cache \
+  /var/log/nginx \
+  /var/run/nginx
 
-## start cronjobs for the queue
-echo "Starting cron jobs."
-cron
+# Permissions (no recursive chown again)
+chmod -R 775 /app/storage /app/bootstrap/cache
 
-echo "Starting supervisord."
+
+echo "== Starting cron =="
+crond -L /var/log/crond -l 5
+
+echo "== Starting supervisord =="
 exec "$@"
