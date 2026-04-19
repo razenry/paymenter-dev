@@ -229,11 +229,8 @@ class AppServiceProvider extends ServiceProvider
 
         foreach ($directories as $directory) {
             if (!is_dir($directory)) {
-                mkdir($directory, 0755, true);
-            }
-            // Ensure directory is writable
-            if (is_dir($directory) && !is_writable($directory)) {
-                chmod($directory, 0755);
+                // Create with permissive mode (Docker-safe)
+                mkdir($directory, 0777, true);
             }
         }
     }
