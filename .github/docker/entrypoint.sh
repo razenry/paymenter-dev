@@ -44,34 +44,6 @@ else
   echo -e "Storage symlink already exists."
 fi
 
-## copy default themes if themes directory is empty or doesn't exist
-if [ ! -d /app/themes ] || [ -z "$(ls -A /app/themes 2>/dev/null)" ]; then
-  echo -e "Themes directory is empty, copying default themes..."
-  mkdir -p /app/themes
-  if [ -d /app/themes_default ]; then
-    cp -rp /app/themes_default/. /app/themes/
-    chown -R nginx:nginx /app/themes
-    chmod -R 755 /app/themes
-    echo -e "Default themes copied."
-  fi
-else
-  echo -e "Themes directory already populated."
-fi
-
-## copy default extensions if extensions directory is empty or doesn't exist
-if [ ! -d /app/extensions ] || [ -z "$(ls -A /app/extensions 2>/dev/null)" ]; then
-  echo -e "Extensions directory is empty, copying default extensions..."
-  mkdir -p /app/extensions
-  if [ -d /app/extensions_default ]; then
-    cp -rp /app/extensions_default/. /app/extensions/
-    chown -R nginx:nginx /app/extensions
-    chmod -R 755 /app/extensions
-    echo -e "Default extensions copied."
-  fi
-else
-  echo -e "Extensions directory already populated."
-fi
-
 ## set permissions for themes and extensions
 echo -e "Setting themes and extensions permissions."
 chown -R nginx:nginx /app/themes /app/extensions
