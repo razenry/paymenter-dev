@@ -1,13 +1,13 @@
-#!/bin/ash -e
+#!/bin/bash -e
 cd /app
 
 echo "== Preparing filesystem =="
-# Base dirs (only what is actually needed)
 mkdir -p \
   /var/log/nginx \
   /var/run/nginx \
   /var/log/supervisord \
-  /app/storage \
+  /app/storage/logs \
+  /app/storage/framework/{cache,sessions,views} \
   /app/bootstrap/cache
 
 echo "== Loading environment =="
@@ -17,59 +17,36 @@ if [ -f /app/.env ]; then
 fi
 
 if [ -z "$DB_PORT" ]; then
+  echo "DB_PORT not specified, defaulting to 3306"
   DB_PORT=3306
   export DB_PORT
-fi
-if [[ -z $DB_PORT ]]; then
-  echo -e "DB_PORT not specified, defaulting to 3306"
-  DB_PORT=3306
 fi
 
 ## check for DB up before starting the panel
 echo "Checking database status."
-until nc -z -v -w30 $DB_HOST $DB_PORT
+until nc -z -w30 $DB_HOST $DB_PORT
 do
   echo "Waiting for database connection..."
-  # wait for 1 seconds before check again
   sleep 1
 done
 
 ## check if storage symlink exists, if not create it
 if [ ! -L /app/public/storage ]; then
-  echo -e "Creating storage symlink."
+  echo "Creating storage symlink."
   rm -rf /app/public/storage
   ln -s /app/storage/app/public /app/public/storage
-  echo -e "Storage symlink created."
+  echo "Storage symlink created."
 else
-  echo -e "Storage symlink already exists."
+  echo "Storage symlink already exists."
 fi
 
-## set permissions for themes and extensions
-echo -e "Setting themes and extensions permissions."
-chown -R nginx:nginx /app/themes /app/extensions
-chmod -R 755 /app/themes /app/extensions
-
-## set storage permissions — ensure logs dir exists, then fix ownership
-## so newly-created daily log files inherit correct perms
-echo -e "Setting storage permissions."
-mkdir -p /app/storage/logs /app/storage/framework/{cache,sessions,views}
-chown -R nginx:nginx /app/storage /app/bootstrap/cache
-chmod -R 775 /app/storage /app/bootstrap/cache
-
 ## make sure the db is set up
-echo -e "Migrating and Seeding D.B"
+echo "Migrating and Seeding D.B"
 php artisan migrate --seed --force
 
-## Re-fix storage ownership – the artisan commands above may have
-## created new log/cache files as root, making them inaccessible to
-## the nginx user that PHP-FPM and the queue worker run under.
-echo -e "Re-fixing storage permissions after migration."
-chown -R nginx:nginx /app/storage /app/bootstrap/cache
-chmod -R 775 /app/storage /app/bootstrap/cache
-
 ## start cronjobs for the queue
-echo -e "Starting cron jobs."
-crond -L /var/log/crond -l 5
+echo "Starting cron jobs."
+cron
 
-echo -e "Starting supervisord."
+echo "Starting supervisord."
 exec "$@"
