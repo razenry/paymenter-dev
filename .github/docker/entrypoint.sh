@@ -40,9 +40,20 @@ else
   echo "Storage symlink already exists."
 fi
 
+## Set permissions
+echo "Setting permissions for www-data."
+chown -R www-data:www-data /app/storage /app/bootstrap/cache /app/themes /app/extensions
+chmod -R 775 /app/storage /app/bootstrap/cache
+
 ## make sure the db is set up
 echo "Migrating and Seeding D.B"
 php artisan migrate --seed --force
+
+## Re-fix storage ownership – the artisan commands above may have
+## created new log/cache/view files as root.
+echo "Re-fixing storage permissions after migration."
+chown -R www-data:www-data /app/storage /app/bootstrap/cache
+chmod -R 775 /app/storage /app/bootstrap/cache
 
 ## start cronjobs for the queue
 echo "Starting cron jobs."

@@ -53,7 +53,7 @@ WORKDIR /app
 
 # Runtime-only packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates cron curl supervisor tar unzip \
+    ca-certificates cron curl supervisor tar unzip gosu \
     nginx libpng16-16 libxml2 libzip4 libicu72 libgmp10 netcat-openbsd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -73,7 +73,8 @@ RUN cp .env.example .env \
     && rm -rf .env bootstrap/cache/*.php \
     && rm /usr/local/etc/php-fpm.conf \
     && rm -f /etc/nginx/sites-enabled/default \
-    && echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" \
+    # Run scheduler as www-data so log files are created with correct ownership
+    && echo "* * * * * gosu www-data /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" \
     >> /var/spool/cron/crontabs/root \
     && mkdir -p /var/run/php /var/run/nginx
 
