@@ -69,7 +69,7 @@ COPY --from=node-builder /app/public /app/public
 COPY . ./
 
 RUN cp .env.example .env \
-    && chmod 775 -R bootstrap storage \
+    && chmod 777 -R bootstrap storage \
     && rm -rf .env bootstrap/cache/*.php \
     && rm /usr/local/etc/php-fpm.conf \
     && rm -f /etc/nginx/sites-enabled/default \
