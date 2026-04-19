@@ -61,20 +61,8 @@ class Pterodactyl extends Server
 
         if (!$response->successful()) {
             $body = $response->json();
-            $errors = $body['errors'] ?? [];
-            $detail = $errors[0]['detail'] ?? ('Pterodactyl API error (HTTP ' . $response->status() . ')');
-
-            try {
-                logger()->debug('[pterodactyl] failed to execute api call', [
-                    'url' => $url,
-                    'status' => $response->status(),
-                    'errors' => $errors,
-                ]);
-            } catch (\Throwable) {
-                // Silently ignore log failures so the real API error is surfaced.
-            }
-
-            throw new DisplayException($detail);
+            logger()->debug('[pterodactyl] failed to execute api call', $body['errors']);
+            throw new DisplayException($body['errors'][0]['detail']);
         }
 
         return $response->json() ?? [];
@@ -424,18 +412,11 @@ class Pterodactyl extends Server
         try {
             $server = $this->request('/api/application/servers', 'post', $serverCreationData);
         } catch (\Throwable $e) {
-            // Wrap logger in try-catch so log-permission errors
-            // don't mask the real Pterodactyl API error message.
-            try {
-                logger()->error('Failed to create server via Pterodactyl API', [
-                    'service_id' => $service->id,
-                    'payload' => $serverCreationData,
-                    'error' => $e->getMessage(),
-                ]);
-            } catch (\Throwable) {
-                // Logging failed (e.g. permission denied) — continue
-                // so the real error is surfaced to the user.
-            }
+            logger()->error('Failed to create server via Pterodactyl API', [
+                'service_id' => $service->id,
+                'payload' => $serverCreationData,
+                'error' => $e->getMessage(),
+            ]);
 
             throw new DisplayException('Server creation failed: ' . $e->getMessage());
         }
