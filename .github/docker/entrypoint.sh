@@ -60,6 +60,13 @@ chmod -R 775 /app/storage /app/bootstrap/cache
 echo -e "Migrating and Seeding D.B"
 php artisan migrate --seed --force
 
+## Re-fix storage ownership – the artisan commands above may have
+## created new log/cache files as root, making them inaccessible to
+## the nginx user that PHP-FPM and the queue worker run under.
+echo -e "Re-fixing storage permissions after migration."
+chown -R nginx:nginx /app/storage /app/bootstrap/cache
+chmod -R 775 /app/storage /app/bootstrap/cache
+
 ## start cronjobs for the queue
 echo -e "Starting cron jobs."
 crond -L /var/log/crond -l 5

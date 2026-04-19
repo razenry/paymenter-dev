@@ -420,11 +420,18 @@ class Pterodactyl extends Server
         try {
             $server = $this->request('/api/application/servers', 'post', $serverCreationData);
         } catch (\Throwable $e) {
-            logger()->error('Failed to create server via Pterodactyl API', [
-                'service_id' => $service->id,
-                'payload' => $serverCreationData,
-                'error' => $e->getMessage(),
-            ]);
+            // Wrap logger in try-catch so log-permission errors
+            // don't mask the real Pterodactyl API error message.
+            try {
+                logger()->error('Failed to create server via Pterodactyl API', [
+                    'service_id' => $service->id,
+                    'payload' => $serverCreationData,
+                    'error' => $e->getMessage(),
+                ]);
+            } catch (\Throwable) {
+                // Logging failed (e.g. permission denied) — continue
+                // so the real error is surfaced to the user.
+            }
 
             throw new DisplayException('Server creation failed: ' . $e->getMessage());
         }
