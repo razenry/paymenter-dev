@@ -49,10 +49,12 @@ echo -e "Setting themes and extensions permissions."
 chown -R nginx:nginx /app/themes /app/extensions
 chmod -R 755 /app/themes /app/extensions
 
-## set storage permissions to 777 and user nginx:nginx
+## set storage permissions — ensure logs dir exists, then fix ownership
+## so newly-created daily log files inherit correct perms
 echo -e "Setting storage permissions."
-chmod -R 777 /app/storage/*
-chown -R nginx:nginx /app/storage
+mkdir -p /app/storage/logs /app/storage/framework/{cache,sessions,views}
+chown -R nginx:nginx /app/storage /app/bootstrap/cache
+chmod -R 775 /app/storage /app/bootstrap/cache
 
 ## make sure the db is set up
 echo -e "Migrating and Seeding D.B"

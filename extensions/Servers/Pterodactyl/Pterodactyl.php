@@ -61,8 +61,16 @@ class Pterodactyl extends Server
 
         if (!$response->successful()) {
             $body = $response->json();
-            logger()->debug('[pterodactyl] failed to execute api call', $body['errors']);
-            throw new DisplayException($body['errors'][0]['detail']);
+            $errors = $body['errors'] ?? [];
+            $detail = $errors[0]['detail'] ?? ('Pterodactyl API error (HTTP ' . $response->status() . ')');
+
+            logger()->debug('[pterodactyl] failed to execute api call', [
+                'url' => $url,
+                'status' => $response->status(),
+                'errors' => $errors,
+            ]);
+
+            throw new DisplayException($detail);
         }
 
         return $response->json() ?? [];

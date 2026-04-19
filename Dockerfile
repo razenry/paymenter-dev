@@ -69,12 +69,14 @@ COPY --from=node-builder /app/public /app/public
 # 10. Copy app source last (changes most often, keep near end for cache efficiency)
 COPY . ./
 
-RUN cp .env.example .env \
-    && chmod 777 -R bootstrap storage/* \
+RUN apk add --no-cache su-exec \
+    && cp .env.example .env \
+    && chmod 775 -R bootstrap storage \
     && rm -rf .env bootstrap/cache/*.php \
     && chown -R nginx:nginx . \
     && rm /usr/local/etc/php-fpm.conf \
-    && echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" \
+    # Run scheduler as nginx so log files are created with correct ownership
+    && echo "* * * * * su-exec nginx /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" \
     >> /var/spool/cron/crontabs/root \
     && mkdir -p /var/run/php /var/run/nginx \
     # 11. Purge apk cache in final image too
