@@ -54,7 +54,7 @@ WORKDIR /app
 # Runtime-only packages
 RUN apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates cron curl supervisor tar unzip \
-    nginx libpng16-16t64 libxml2 libzip4 libicu72 libgmp10 netcat-openbsd \
+    nginx libpng16-16 libxml2 libzip4 libicu72 libgmp10 netcat-openbsd \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 COPY .github/docker/custom-php.ini /usr/local/etc/php/conf.d/custom-php.ini
