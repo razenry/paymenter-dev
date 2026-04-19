@@ -64,11 +64,15 @@ class Pterodactyl extends Server
             $errors = $body['errors'] ?? [];
             $detail = $errors[0]['detail'] ?? ('Pterodactyl API error (HTTP ' . $response->status() . ')');
 
-            logger()->debug('[pterodactyl] failed to execute api call', [
-                'url' => $url,
-                'status' => $response->status(),
-                'errors' => $errors,
-            ]);
+            try {
+                logger()->debug('[pterodactyl] failed to execute api call', [
+                    'url' => $url,
+                    'status' => $response->status(),
+                    'errors' => $errors,
+                ]);
+            } catch (\Throwable) {
+                // Silently ignore log failures so the real API error is surfaced.
+            }
 
             throw new DisplayException($detail);
         }
