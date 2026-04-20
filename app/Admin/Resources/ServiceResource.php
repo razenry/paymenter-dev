@@ -247,6 +247,11 @@ class ServiceResource extends Resource
                     ->default(false)
                     ->inline(false)
                     ->reactive(),
+                Toggle::make('disable_auto_provision')
+                    ->label('Disable Auto Provision')
+                    ->default(false)
+                    ->inline(false)
+                    ->reactive(),
             ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Helpers\ExtensionHelper;
 use App\Models\Service;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class ProvisionPendingServices extends Command
@@ -41,6 +42,7 @@ class ProvisionPendingServices extends Command
             ->whereDoesntHave('invoices', function ($query) {
                 $query->where('status', 'pending');
             })
+            ->where('disable_auto_provision', false)
 
             ->get()
             ->each(function (Service $service) use (&$count) {
@@ -51,6 +53,7 @@ class ProvisionPendingServices extends Command
 
                 try {
                     ExtensionHelper::createServer($service);
+                    Cache::forget('provision_retries_' . $service->id);
                     $count++;
                 } catch (\Throwable $e) {
                     $msg = strtolower($e->getMessage());
@@ -71,6 +74,19 @@ class ProvisionPendingServices extends Command
                         'service_id' => $service->id,
                         'error' => $e->getMessage(),
                     ]);
+
+                    $retries = Cache::get('provision_retries_' . $service->id, 0) + 1;
+                    if ($retries >= 3) {
+                        $service->disable_auto_provision = true;
+                        $service->save();
+                        Cache::forget('provision_retries_' . $service->id);
+
+                        Log::error('Service provisioning reached max retries (3), disabling auto provision', [
+                            'service_id' => $service->id,
+                        ]);
+                    } else {
+                        Cache::put('provision_retries_' . $service->id, $retries, now()->addDay());
+                    }
                 }
             });
 

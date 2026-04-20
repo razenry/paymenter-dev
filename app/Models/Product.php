@@ -21,6 +21,7 @@ class Product extends Model implements Auditable
         'description',
         'category_id',
         'enabled',
+        'disable_auto_provision',
     ];
 
     /**

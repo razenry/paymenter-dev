@@ -18,7 +18,7 @@ class RenewServiceService
         if ($service->product->server) {
             if ($service->status == Service::STATUS_SUSPENDED) {
                 UnsuspendJob::dispatch($service);
-            } elseif ($service->status == Service::STATUS_PENDING) {
+            } elseif ($service->status == Service::STATUS_PENDING && !$service->disable_auto_provision) {
                 CreateJob::dispatch($service);
             }
         }

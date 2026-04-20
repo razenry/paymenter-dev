@@ -29,6 +29,7 @@ use OwenIt\Auditing\Contracts\Auditable;
  * @property string $currency_code
  * @property int|null $billing_agreement_id
  * @property bool $disable_termination
+ * @property bool $disable_auto_provision
  */
 class Service extends Model implements Auditable
 {
@@ -56,11 +57,13 @@ class Service extends Model implements Auditable
         'currency_code',
         'billing_agreement_id',
         'disable_termination',
+        'disable_auto_provision',
     ];
 
     protected $casts = [
         'expires_at' => 'date',
         'disable_termination' => 'boolean',
+        'disable_auto_provision' => 'boolean',
     ];
 
     /**

@@ -205,6 +205,7 @@ class Cart extends Component
                     'price' => $price,
                     'quantity' => $item->quantity,
                     'coupon_id' => $item->isCouponApplicable() ? $cart->coupon_id : null,
+                    'disable_auto_provision' => $item->product->disable_auto_provision,
                 ]);
 
                 // Set checkout properties
@@ -255,7 +256,7 @@ class Cart extends Component
                     ]);
                 } else {
                     // Activate free service immediately
-                    if ($service->product->server) {
+                    if ($service->product->server && !$service->disable_auto_provision) {
                         CreateJob::dispatch($service);
                     }
                     $service->status = Service::STATUS_ACTIVE;

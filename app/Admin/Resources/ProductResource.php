@@ -90,6 +90,9 @@ class ProductResource extends Resource
                                 Checkbox::make('hidden')
                                     ->label('Hide product')
                                     ->hint('Hide the product from the client area.'),
+                                Checkbox::make('disable_auto_provision')
+                                    ->label('Disable auto provision')
+                                    ->hint('Check this to disable auto provisioning for this product.'),
 
                                 RichEditor::make('description')->nullable()->columnSpanFull(),
                                 FileUpload::make('image')
