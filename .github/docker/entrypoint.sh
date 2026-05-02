@@ -54,15 +54,11 @@ mkdir -p \
 echo "== Running migrations =="
 php artisan migrate --seed --force
 
-# Ownership (ONLY writable paths)
-chown -R nginx:nginx \
-  /app/storage \
-  /app/bootstrap/cache \
-  /var/log/nginx \
-  /var/run/nginx
-
-# Permissions (no recursive chown again)
-chmod -R 775 /app/storage /app/bootstrap/cache
+# Ownership and Permissions
+# We do this AFTER migrations to ensure any files created by artisan are also covered.
+echo "== Setting permissions =="
+chown -R nginx:nginx /app/storage /app/bootstrap/cache
+chmod -R 777 /app/storage /app/bootstrap/cache
 
 
 echo "== Starting cron =="
