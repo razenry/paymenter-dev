@@ -38,15 +38,20 @@ echo "Database is up"
 
 echo "== Storage setup =="
 
-# Force cleanup of old sessions/cache if they are owned by root
-# but don't delete public storage to avoid data loss.
+# Force cleanup of log and framework directories (REALLY AGGRESSIVE)
+# We don't touch /app/storage/app/public to avoid deleting user files.
+rm -rf /app/storage/logs/*
+rm -rf /app/storage/framework/cache/*
+rm -rf /app/storage/framework/sessions/*
+rm -rf /app/storage/framework/views/*
+
 mkdir -p /app/storage/logs
 mkdir -p /app/storage/framework/{cache/data,sessions,views,testing}
+mkdir -p /app/storage/app/public
 
-# Ensure log file is writable or delete it so it can be recreated
-if [ -f /app/storage/logs/laravel*.log ]; then
-  chmod 777 /app/storage/logs/laravel*.log || rm -f /app/storage/logs/laravel*.log
-fi
+# Ensure everything in storage is writable
+chmod -R 777 /app/storage
+chown -R nginx:nginx /app/storage
 
 # Storage symlink
 if [ ! -L /app/public/storage ]; then
@@ -54,16 +59,11 @@ if [ ! -L /app/public/storage ]; then
   ln -s /app/storage/app/public /app/public/storage
 fi
 
-# Final recursive check
-mkdir -p /app/storage/app/public
-
-
 echo "== Running migrations =="
 php artisan migrate --seed --force
 
-# Ownership and Permissions
-# We do this AFTER migrations to ensure any files created by artisan are also covered.
-echo "== Setting permissions =="
+# Ownership and Permissions (Final check)
+echo "== Finalizing permissions =="
 chown -R nginx:nginx /app/storage /app/bootstrap/cache
 chmod -R 777 /app/storage /app/bootstrap/cache
 
