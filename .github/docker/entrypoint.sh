@@ -38,17 +38,24 @@ echo "Database is up"
 
 echo "== Storage setup =="
 
+# Force cleanup of old sessions/cache if they are owned by root
+# but don't delete public storage to avoid data loss.
+mkdir -p /app/storage/logs
+mkdir -p /app/storage/framework/{cache/data,sessions,views,testing}
+
+# Ensure log file is writable or delete it so it can be recreated
+if [ -f /app/storage/logs/laravel*.log ]; then
+  chmod 777 /app/storage/logs/laravel*.log || rm -f /app/storage/logs/laravel*.log
+fi
+
 # Storage symlink
 if [ ! -L /app/public/storage ]; then
   rm -rf /app/public/storage
   ln -s /app/storage/app/public /app/public/storage
 fi
 
-# Storage structure
-mkdir -p \
-  /app/storage/app/public \
-  /app/storage/framework/{cache/data,sessions,views,testing} \
-  /app/storage/logs
+# Final recursive check
+mkdir -p /app/storage/app/public
 
 
 echo "== Running migrations =="
