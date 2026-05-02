@@ -11,10 +11,9 @@ mkdir -p \
   /app/bootstrap/cache
 
 echo "== Loading environment =="
-if [ -f /app/.env ]; then
-  echo "Found existing /app/.env"
-  export $(grep -v '^#' /app/.env | xargs)
-fi
+# System environment variables (set via Dokploy/Docker) always take precedence.
+# We don't manually source .env here to avoid overwriting them.
+# Laravel's DotEnv loader will handle the .env file internally.
 
 if [ -z "$DB_HOST" ]; then
   echo "WARNING: DB_HOST is not set, falling back to 'database'"
