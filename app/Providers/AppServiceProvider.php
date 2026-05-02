@@ -134,6 +134,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (env('APP_URL')) {
+            \URL::forceRootUrl(env('APP_URL'));
+        }
+
         // Ensure storage directories exist with proper permissions
         $this->ensureStorageDirectoriesExist();
 
