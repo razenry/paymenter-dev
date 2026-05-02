@@ -16,15 +16,19 @@ if [ -f /app/.env ]; then
   export $(grep -v '^#' /app/.env | xargs)
 fi
 
-if [ -z "$DB_PORT" ]; then
-  DB_PORT=3306
-  export DB_PORT
+if [ -z "$DB_HOST" ]; then
+  echo "WARNING: DB_HOST is not set, falling back to 'database'"
+  DB_HOST="database"
 fi
 
-echo "== Waiting for database =="
+if [ -z "$DB_PORT" ]; then
+  DB_PORT=3306
+fi
+
+echo "== Waiting for database ($DB_HOST:$DB_PORT) =="
 until nc -z -w5 "$DB_HOST" "$DB_PORT"; do
-  echo "Waiting for database connection..."
-  sleep 1
+  echo "Waiting for database connection at $DB_HOST:$DB_PORT..."
+  sleep 2
 done
 echo "Database is up"
 

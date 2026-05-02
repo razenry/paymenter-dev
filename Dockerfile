@@ -71,7 +71,6 @@ COPY . ./
 
 RUN cp .env.example .env \
     && chmod 777 -R bootstrap storage/* \
-    && rm -rf .env bootstrap/cache/*.php \
     && chown -R nginx:nginx . \
     && rm /usr/local/etc/php-fpm.conf \
     && echo "* * * * * /usr/local/bin/php /app/artisan schedule:run >> /dev/null 2>&1" \
